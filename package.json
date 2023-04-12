@@ -90,6 +90,7 @@
     "LICENSE",
     "README.md",
     "CONTRIBUTING.md",
+    "build/**/*",
     "dist/**/*.js",
     "dist/**/*.js.map",
     "dist/**/*.d.ts",
