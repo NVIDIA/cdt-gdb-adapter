@@ -266,15 +266,28 @@ export class GDBTargetDebugSession extends GDBDebugSession {
 
     protected async startGDBAndAttachToTarget(
         response: DebugProtocol.AttachResponse | DebugProtocol.LaunchResponse,
-        args: TargetAttachRequestArguments
+        args: TargetAttachRequestArguments,
+        isQNX = false
     ): Promise<void> {
         if (args.target === undefined) {
             args.target = {};
         }
         const target = args.target;
         try {
-            this.isAttach = true;
+            // We have this line because on x86, we see "The 'remote' target does not
+            // support 'run' Try 'help target' or 'continue'." So we need to set this variable
+            // to true so that we issue an continue and not a run. On QNX, we need to start
+            // by issuing a run so this is set to false.
+            this.isAttach = !isQNX;
             await this.spawn(args);
+
+            if (isQNX) {
+                await this.gdb.sendCommand(
+                    `target qnx ${target.host}:${target.port}`
+                );
+                await this.gdb.sendCommand(`upload ${args.program}`);
+            }
+
             await this.gdb.sendFileExecAndSymbols(args.program);
             await this.gdb.sendEnablePrettyPrint();
             if (args.imageAndSymbols) {
@@ -309,10 +322,14 @@ export class GDBTargetDebugSession extends GDBDebugSession {
                     target.parameters !== undefined
                         ? target.parameters
                         : defaultTarget;
-                await mi.sendTargetSelectRequest(this.gdb, {
-                    type: targetType,
-                    parameters: targetParameters,
-                });
+
+                if (!isQNX) {
+                    await mi.sendTargetSelectRequest(this.gdb, {
+                        type: targetType,
+                        parameters: targetParameters,
+                    });
+                }
+
                 this.sendEvent(
                     new OutputEvent(
                         `connected to ${targetType} target ${targetParameters.join(
