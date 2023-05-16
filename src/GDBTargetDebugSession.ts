@@ -68,6 +68,11 @@ export interface TargetAttachRequestArguments extends RequestArguments {
     preRunCommands?: string[];
 }
 
+export interface QNXTargetAttachRequestArguments extends TargetAttachRequestArguments {
+    // path to upload the executable to on the QNX system
+    executableUploadPath?: string;
+}
+
 export interface TargetLaunchRequestArguments
     extends TargetAttachRequestArguments {
     target?: TargetLaunchArguments;
@@ -266,7 +271,7 @@ export class GDBTargetDebugSession extends GDBDebugSession {
 
     protected async startGDBAndAttachToTarget(
         response: DebugProtocol.AttachResponse | DebugProtocol.LaunchResponse,
-        args: TargetAttachRequestArguments,
+        args: TargetAttachRequestArguments | QNXTargetAttachRequestArguments,
         isQNX = false
     ): Promise<void> {
         if (args.target === undefined) {
@@ -285,7 +290,11 @@ export class GDBTargetDebugSession extends GDBDebugSession {
                 await this.gdb.sendCommand(
                     `target qnx ${target.host}:${target.port}`
                 );
-                await this.gdb.sendCommand(`upload ${args.program}`);
+                if ('executableUploadPath' in args && args.executableUploadPath) {
+                    await this.gdb.sendCommand(`upload ${args.program} ${args.executableUploadPath}`);
+                } else {
+                    await this.gdb.sendCommand(`upload ${args.program}`);
+                }
             }
 
             await this.gdb.sendFileExecAndSymbols(args.program);
