@@ -31,6 +31,7 @@ import {
     sendDataReadMemoryBytes,
     sendDataDisassemble,
     sendDataWriteMemoryBytes,
+    MIDataDisassembleSrcAndAsmLine,
 } from './mi/data';
 import { StoppedEvent } from './stoppedEvent';
 import { VarObjType } from './varManager';
@@ -112,6 +113,7 @@ export interface CDTDisassembleArguments
      * is used.
      */
     endMemoryReference: string;
+    excludeRawOpcodes?: boolean;
 }
 
 class ThreadWithStatus implements DebugProtocol.Thread {
@@ -191,6 +193,14 @@ export class GDBDebugSession extends LoggingDebugSession {
     // set to true if the target was interrupted where inteneded, and should
     // therefore be resumed after breakpoints are inserted.
     protected waitPausedNeeded = false;
+
+    // Determines whether or not breakpoint condiitions are added with the --force argument.
+    // Without --force, if the symbols used in the condition's expression cannot be resolved
+    // (i.e. are not yet present) at the time of breakpoint creation, the breakpoint reverts
+    // to an unconditional breakpoint. --force allows the expression to resolve later when
+    // the breakpoint is first hit and thus, the symbols are in scope.
+    protected forceBreakpointConditions = false;
+
     protected isInitialized = false;
 
     constructor() {
@@ -619,6 +629,7 @@ export class GDBDebugSession extends LoggingDebugSession {
                         source: file,
                         line: vsbp.line,
                         condition: vsbp.condition,
+                        forceCondition: this.forceBreakpointConditions,
                         temporary,
                         ignoreCount,
                         hardware: this.gdb.isUseHWBreakpoint(),
@@ -844,16 +855,20 @@ export class GDBDebugSession extends LoggingDebugSession {
         return new ThreadWithStatus(parseInt(thread.id, 10), name, running);
     }
 
+    protected async updateThreadList(): Promise<void> {
+        if (!this.isRunning) {
+            const result = await mi.sendThreadInfoRequest(this.gdb, {});
+            this.threads = result.threads.map((thread) =>
+                this.convertThread(thread)
+            );
+        }
+    }
+
     protected async threadsRequest(
         response: DebugProtocol.ThreadsResponse
     ): Promise<void> {
         try {
-            if (!this.isRunning) {
-                const result = await mi.sendThreadInfoRequest(this.gdb, {});
-                this.threads = result.threads.map((thread) =>
-                    this.convertThread(thread)
-                );
-            }
+            await this.updateThreadList();
 
             response.body = {
                 threads: this.threads,
@@ -997,7 +1012,7 @@ export class GDBDebugSession extends LoggingDebugSession {
             }
             response.body = {
                 allThreadsContinued: isAllThreadsContinued,
-            }
+            };
             this.sendResponse(response);
         } catch (err) {
             this.sendErrorResponse(
@@ -1371,23 +1386,167 @@ export class GDBDebugSession extends LoggingDebugSession {
         }
     }
 
+    protected flattenDisassembledInstructions(
+        asm_insns: MIDataDisassembleSrcAndAsmLine[],
+        instructions: DebugProtocol.DisassembledInstruction[],
+        instructionsToSkip: number,
+        maxInstructionsToWrite?: number,
+        skippedInstructions?: DebugProtocol.DisassembledInstruction[]
+    ): {
+        instructionsSkipped: number;
+        instructionsWritten: number;
+        offsetDisplaced: number;
+    } {
+        let instructionsSkipped = 0;
+        let instructionsWritten = 0;
+        let offsetDisplaced = 0;
+        let lastInstructionLength = 0;
+        let firstInstructionSkipped:
+            | DebugProtocol.DisassembledInstruction
+            | undefined;
+        let lastInstructionSkipped:
+            | DebugProtocol.DisassembledInstruction
+            | undefined;
+
+        outer_loop: for (const asmInsn of asm_insns) {
+            const line: number | undefined = asmInsn.line
+                ? parseInt(asmInsn.line, 10)
+                : undefined;
+            const source = {
+                name: asmInsn.file,
+                path: asmInsn.fullname,
+            } as DebugProtocol.Source;
+            for (const asmLine of asmInsn.line_asm_insn) {
+                if (instructionsWritten === maxInstructionsToWrite) {
+                    break outer_loop;
+                }
+
+                let funcAndOffset: string | undefined;
+                if (asmLine['func-name'] && asmLine.offset) {
+                    funcAndOffset = `${asmLine['func-name']}+${asmLine.offset}`;
+                } else if (asmLine['func-name']) {
+                    funcAndOffset = asmLine['func-name'];
+                } else {
+                    funcAndOffset = undefined;
+                }
+                const disInsn = {
+                    address: asmLine.address,
+                    instructionBytes: asmLine.opcodes,
+                    instruction: asmLine.inst ?? '??',
+                    symbol: funcAndOffset,
+                    location: source,
+                    line,
+                } as DebugProtocol.DisassembledInstruction;
+
+                if (instructionsSkipped < instructionsToSkip) {
+                    if (!firstInstructionSkipped) {
+                        firstInstructionSkipped = disInsn;
+                    }
+
+                    lastInstructionSkipped = disInsn;
+                    skippedInstructions?.push(disInsn);
+
+                    instructionsSkipped += 1;
+                } else {
+                    instructions.push(disInsn);
+                    instructionsWritten += 1;
+                }
+
+                const opcodes = asmLine.opcodes.replace(/\s/g, '');
+
+                // Every hex digit is a nibble (half-byte)
+                const instructionLength = opcodes.length / 2;
+
+                offsetDisplaced += instructionLength;
+                lastInstructionLength = instructionLength;
+            }
+        }
+
+        if (!instructionsWritten) {
+            logger.verbose(
+                `[Disassemble request] No instructions flattened. Instructions skipped: ${instructionsSkipped}, Total bytes: ${offsetDisplaced}`
+            );
+        } else {
+            const format = (text: string, width: number) =>
+                text.length >= width
+                    ? text
+                    : text + ' '.repeat(width - text.length);
+
+            const toString = (i: DebugProtocol.DisassembledInstruction) =>
+                i.address +
+                    ': ' +
+                    format(i.instruction, 40) +
+                    '; ' +
+                    i.symbol ?? 'Unknown function';
+
+            const announceWidth = instructionsSkipped ? 25 : 17;
+
+            logger.verbose(
+                `[Disassemble request] Flatten report: Instructions skipped: ${instructionsSkipped}, Instructions written: ${instructionsWritten}, Total bytes: ${offsetDisplaced}`
+            );
+            logger.verbose(
+                `[Disassemble request] Flatten report -ctnd-: ${format(
+                    'First instruction',
+                    announceWidth
+                )} --> ${toString(
+                    instructions[instructions.length - instructionsWritten]
+                )}`
+            );
+            logger.verbose(
+                `[Disassemble request] Flatten report -ctnd-: ${format(
+                    'Last instruction',
+                    announceWidth
+                )} --> ${toString(instructions[instructions.length - 1])}`
+            );
+            if (
+                instructionsSkipped &&
+                firstInstructionSkipped && // To placate static analysis [sigh]
+                lastInstructionSkipped // To placate static analysis [sigh]
+            ) {
+                logger.verbose(
+                    `[Disassemble request] Flatten report -ctnd-: ${format(
+                        'First instruction skipped',
+                        announceWidth
+                    )} --> ${toString(firstInstructionSkipped)}`
+                );
+                logger.verbose(
+                    `[Disassemble request] Flatten report -ctnd-: ${format(
+                        'Last instruction skipped',
+                        announceWidth
+                    )} --> ${toString(lastInstructionSkipped)}`
+                );
+            }
+            logger.verbose(
+                `[Disassemble request] Flatten report -ctnd-: Last instruction length: 0x${lastInstructionLength.toString(
+                    16
+                )}`
+            );
+        }
+
+        return {
+            instructionsSkipped,
+            instructionsWritten,
+            offsetDisplaced,
+        };
+    }
+
     protected async disassembleRequest(
         response: DebugProtocol.DisassembleResponse,
         args: CDTDisassembleArguments
     ) {
         try {
             const meanSizeOfInstruction = 4;
-            let startOffset = 0;
-            let lastStartOffset = -1;
+            let startOffset = args.offset ?? 0;
+            let lastStartOffset: number | undefined;
             const instructions: DebugProtocol.DisassembledInstruction[] = [];
             let oneIterationOnly = false;
-            outer_loop: while (
+            while (
                 instructions.length < args.instructionCount &&
                 !oneIterationOnly
             ) {
                 if (startOffset === lastStartOffset) {
                     // We have stopped getting new instructions, give up
-                    break outer_loop;
+                    break;
                 }
                 lastStartOffset = startOffset;
 
@@ -1406,44 +1565,22 @@ export class GDBDebugSession extends LoggingDebugSession {
                         stepEndAddress = args.endMemoryReference;
                         oneIterationOnly = true;
                     }
-                    const result = await sendDataDisassemble(
-                        this.gdb,
-                        stepStartAddress,
-                        stepEndAddress
-                    );
-                    for (const asmInsn of result.asm_insns) {
-                        const line: number | undefined = asmInsn.line
-                            ? parseInt(asmInsn.line, 10)
-                            : undefined;
-                        const source = {
-                            name: asmInsn.file,
-                            path: asmInsn.fullname,
-                        } as DebugProtocol.Source;
-                        for (const asmLine of asmInsn.line_asm_insn) {
-                            let funcAndOffset: string | undefined;
-                            if (asmLine['func-name'] && asmLine.offset) {
-                                funcAndOffset = `${asmLine['func-name']}+${asmLine.offset}`;
-                            } else if (asmLine['func-name']) {
-                                funcAndOffset = asmLine['func-name'];
-                            } else {
-                                funcAndOffset = undefined;
-                            }
-                            const disInsn = {
-                                address: asmLine.address,
-                                instructionBytes: asmLine.opcodes,
-                                instruction: asmLine.inst,
-                                symbol: funcAndOffset,
-                                location: source,
-                                line,
-                            } as DebugProtocol.DisassembledInstruction;
-                            instructions.push(disInsn);
-                            if (instructions.length === args.instructionCount) {
-                                break outer_loop;
-                            }
+                    const result = await sendDataDisassemble(this.gdb, {
+                        startAddress: stepStartAddress,
+                        endAddress: stepEndAddress,
+                    });
+                    const { offsetDisplaced } =
+                        this.flattenDisassembledInstructions(
+                            result.asm_insns,
+                            instructions,
+                            0,
+                            args.instructionCount - instructions.length
+                        );
 
-                            const bytes = asmLine.opcodes.replace(/\s/g, '');
-                            startOffset += bytes.length;
-                        }
+                    startOffset += offsetDisplaced;
+
+                    if (instructions.length === args.instructionCount) {
+                        break;
                     }
                 } catch (err) {
                     // Failed to read instruction -- what best to do here?
@@ -1461,7 +1598,7 @@ export class GDBDebugSession extends LoggingDebugSession {
                         instructions.push(badDisInsn);
                         startOffset += 2;
                     }
-                    break outer_loop;
+                    break;
                 }
             }
 

@@ -110,6 +110,7 @@ export async function sendBreakInsert(
         disabled?: boolean;
         tracepoint?: boolean;
         condition?: string;
+        forceCondition?: boolean;
         ignoreCount?: number;
         threadId?: string;
         source: string;
@@ -133,8 +134,9 @@ export async function sendBreakInsert(
     );
     const clean = cleanupBreakpointResponse(result);
     if (request.condition) {
+        const forceConditionArg = request.forceCondition ? '--force ' : '';
         await gdb.sendCommand(
-            `-break-condition ${clean.bkpt.number} ${request.condition}`
+            `-break-condition ${forceConditionArg}${clean.bkpt.number} ${request.condition}`
         );
     }
 

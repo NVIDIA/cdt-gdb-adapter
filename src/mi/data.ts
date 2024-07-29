@@ -11,7 +11,7 @@
 import { GDBBackend } from '../GDBBackend';
 import { MIResponse, MIRegisterValueInfo } from './base';
 
-interface MIDataReadMemoryBytesResponse {
+export interface MIDataReadMemoryBytesResponse {
     memory: Array<{
         begin: string;
         end: string;
@@ -19,7 +19,7 @@ interface MIDataReadMemoryBytesResponse {
         contents: string;
     }>;
 }
-interface MIDataDisassembleAsmInsn {
+export interface MIDataDisassembleAsmInsn {
     address: string;
     // func-name in MI
     'func-name': string;
@@ -28,13 +28,13 @@ interface MIDataDisassembleAsmInsn {
     inst: string;
 }
 
-interface MIDataDisassembleSrcAndAsmLine {
-    line: string;
-    file: string;
-    fullname: string;
+export interface MIDataDisassembleSrcAndAsmLine {
+    line?: string;
+    file?: string;
+    fullname?: string;
     line_asm_insn: MIDataDisassembleAsmInsn[];
 }
-interface MIDataDisassembleResponse {
+export interface MIDataDisassembleResponse {
     asm_insns: MIDataDisassembleSrcAndAsmLine[];
 }
 
@@ -81,15 +81,21 @@ export function sendDataEvaluateExpression(
 // https://sourceware.org/gdb/onlinedocs/gdb/GDB_002fMI-Data-Manipulation.html#The-_002ddata_002ddisassemble-Command
 export async function sendDataDisassemble(
     gdb: GDBBackend,
-    startAddress: string,
-    endAddress: string
+    ref: { startAddress: string; endAddress: string } | string
 ): Promise<MIDataDisassembleResponse> {
     // -- 5 == mixed source and disassembly with raw opcodes
     // needs to be deprecated mode 3 for GDB < 7.11
     const mode = gdb.gdbVersionAtLeast('7.11') ? '5' : '3';
-    const result: MIDataDisassembleResponse = await gdb.sendCommand(
-        `-data-disassemble -s "${startAddress}" -e "${endAddress}" -- ${mode}`
-    );
+
+    let command: string;
+
+    if (typeof ref === 'string') {
+        command = `-data-disassemble -a "${ref}" -- ${mode}`;
+    } else {
+        command = `-data-disassemble -s "${ref.startAddress}" -e "${ref.endAddress}" -- ${mode}`;
+    }
+
+    const result: MIDataDisassembleResponse = await gdb.sendCommand(command);
 
     // cleanup the result data
     if (result.asm_insns.length > 0) {
