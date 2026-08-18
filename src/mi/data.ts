@@ -130,7 +130,7 @@ export function sendDataListRegisterNames(
     let command = `-data-list-register-names --frame ${params.frameId} --thread ${params.threadId}`;
 
     if (params.regno) {
-        command += params.regno.join(' ');
+        command += ' ' + params.regno.join(' ');
     }
 
     return gdb.sendCommand(command);
@@ -148,7 +148,7 @@ export function sendDataListRegisterValues(
     let command = `-data-list-register-values --frame ${params.frameId} --thread ${params.threadId} ${params.fmt}`;
 
     if (params.regno) {
-        command += params.regno.join(' ');
+        command += ' ' + params.regno.join(' ');
     }
 
     return gdb.sendCommand(command);
