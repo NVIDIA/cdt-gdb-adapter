@@ -27,7 +27,7 @@ describe('stop', async () => {
         await dc.launchRequest(
             fillDefaults(this.test, {
                 program: path.join(testProgramsDir, 'segv'),
-            })
+            }),
         );
         await dc.configurationDoneRequest();
         const stoppedEvent = await dc.waitForEvent('stopped');

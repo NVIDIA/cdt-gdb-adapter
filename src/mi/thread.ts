@@ -29,7 +29,7 @@ export function sendThreadInfoRequest(
     gdb: GDBBackend,
     params: {
         threadId?: string;
-    }
+    },
 ): Promise<MIThreadInfoResponse> {
     let command = '-thread-info';
     if (params.threadId) {
@@ -47,7 +47,7 @@ export function sendThreadSelectRequest(
     gdb: GDBBackend,
     params: {
         threadId: number;
-    }
+    },
 ): Promise<MIThreadSelectResponse> {
     return gdb.sendCommand(`-thread-select ${params.threadId}`);
 }

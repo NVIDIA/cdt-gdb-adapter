@@ -47,12 +47,12 @@ describe('stderr', function () {
             {
                 path: source,
                 line: 5,
-            }
+            },
         );
 
         const stderr = dc.waitForOutputEvent(
             'stderr',
-            `STDERR Here I am${os.platform() === 'win32' ? '\r\n' : '\n'}`
+            `STDERR Here I am${os.platform() === 'win32' ? '\r\n' : '\n'}`,
         );
 
         const scope = await getScopes(dc);

@@ -40,7 +40,7 @@ describe('launch remote', function () {
             {
                 path: emptySrc,
                 line: 3,
-            }
+            },
         );
     });
 });

@@ -32,7 +32,7 @@ describe('function breakpoints', async function () {
         await dc.launchRequest(
             fillDefaults(this.currentTest, {
                 program: join(testProgramsDir, 'functions'),
-            })
+            }),
         );
     });
 
@@ -135,7 +135,7 @@ describe('function breakpoints', async function () {
         expect(stoppedEvent).to.have.property('body');
         expect(stoppedEvent.body).to.have.property(
             'reason',
-            'function breakpoint'
+            'function breakpoint',
         );
     });
 
@@ -156,7 +156,7 @@ describe('function breakpoints', async function () {
         await dc.continue(
             { threadId: scope.thread.id },
             'function breakpoint',
-            { line: 2, path: /functions_other.c$/ }
+            { line: 2, path: /functions_other.c$/ },
         );
     });
 
@@ -184,7 +184,7 @@ describe('function breakpoints', async function () {
         await dc.continue(
             { threadId: scope.thread.id },
             'function breakpoint',
-            { line: 5, path: /functions_other.c$/ }
+            { line: 5, path: /functions_other.c$/ },
         );
     });
 
@@ -263,10 +263,10 @@ describe('function breakpoints', async function () {
         // really report back anything other than the ID that can
         // be used to check order is maintained
         expect(bpResp2.body.breakpoints[1].id).eq(
-            bpResp1.body.breakpoints[0].id
+            bpResp1.body.breakpoints[0].id,
         );
         expect(bpResp2.body.breakpoints[0].id).not.eq(
-            bpResp1.body.breakpoints[0].id
+            bpResp1.body.breakpoints[0].id,
         );
     });
 

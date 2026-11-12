@@ -36,7 +36,7 @@ describe('Memory Test Suite', function () {
             {
                 path: memSrc,
                 line: 12,
-            }
+            },
         );
         const threads = await dc.threadsRequest();
         // On windows additional threads can exist to handle signals, therefore find
@@ -70,7 +70,7 @@ describe('Memory Test Suite', function () {
     function verifyReadMemoryResponse(
         resp: DebugProtocol.ReadMemoryResponse,
         expectedBytes: string,
-        expectedAddress: number
+        expectedAddress: number,
     ) {
         expect(resp.body?.data).eq(hexToBase64(expectedBytes));
         expect(resp.body?.address).match(/^0x[0-9a-fA-F]+$/);
@@ -142,7 +142,7 @@ describe('Memory Test Suite', function () {
             dc.readMemoryRequest({
                 memoryReference: '0',
                 count: 10,
-            })
+            }),
         );
         expect(err.message).contains('Unable to read memory');
     });
@@ -188,7 +188,7 @@ describe('Memory Test Suite', function () {
                     expression: '&array',
                     frameId: frame.id,
                 })
-            ).body.result
+            ).body.result,
         );
         await dc.writeMemoryRequest(writeArguments);
         const memory = await dc.readMemoryRequest({
@@ -206,7 +206,7 @@ describe('Memory Test Suite', function () {
                     expression: '&array',
                     frameId: frame.id,
                 })
-            ).body.result
+            ).body.result,
         );
         await dc.send('cdt-gdb-tests/executeCommand', {
             command: `-interpreter-exec console "mem ${addrOfArray} ${
@@ -214,7 +214,7 @@ describe('Memory Test Suite', function () {
             } ro"`,
         });
         const error = await expectRejection(
-            dc.writeMemoryRequest(writeArguments)
+            dc.writeMemoryRequest(writeArguments),
         );
 
         expect(error.message).contains('Cannot access memory');
@@ -240,13 +240,13 @@ describe('Memory Test Suite', function () {
 
         for (const test of hexToBase64TestCases) {
             expect(normalize(base64ToHex(hexToBase64(test)))).equal(
-                normalize(test)
+                normalize(test),
             );
         }
 
         for (const test of base64ToHexTestCases) {
             expect(hexToBase64(base64ToHex(test))).equal(
-                test + '='.repeat((4 - (test.length % 4)) % 4)
+                test + '='.repeat((4 - (test.length % 4)) % 4),
             );
         }
     });

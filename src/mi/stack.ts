@@ -23,7 +23,7 @@ export function sendStackInfoDepth(
     params: {
         maxDepth: number;
         threadId?: number;
-    }
+    },
 ): Promise<MIStackInfoDepthResponse> {
     let command = '-stack-info-depth';
     if (params.threadId !== undefined) {
@@ -42,7 +42,7 @@ export function sendStackListFramesRequest(
         lowFrame?: number;
         highFrame?: number;
         threadId?: number;
-    }
+    },
 ): Promise<{
     stack: MIFrameInfo[];
 }> {
@@ -66,7 +66,7 @@ export function sendStackSelectFrame(
     gdb: GDBBackend,
     params: {
         framenum: number;
-    }
+    },
 ): Promise<MIResponse> {
     return gdb.sendCommand(`-stack-select-frame ${params.framenum}`);
 }
@@ -79,7 +79,7 @@ export function sendStackListVariables(
         printValues: 'no-values' | 'all-values' | 'simple-values';
         noFrameFilters?: boolean;
         skipUnavailable?: boolean;
-    }
+    },
 ): Promise<MIStackListVariablesResponse> {
     let command = '-stack-list-variables';
     if (params.noFrameFilters) {

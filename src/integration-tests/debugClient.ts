@@ -17,7 +17,7 @@ import { expect } from 'chai';
 
 export type ReverseRequestHandler<
     A = any,
-    R extends DebugProtocol.Response = DebugProtocol.Response
+    R extends DebugProtocol.Response = DebugProtocol.Response,
 > = (args: A) => Promise<R['body']>;
 export interface ReverseRequestHandlers {
     [key: string]: ReverseRequestHandler | undefined;
@@ -32,7 +32,7 @@ function getAdapterAndArgs(adapter?: string): string[] {
     const adapterPath: string = path.join(
         __dirname,
         '../../dist',
-        chosenAdapter
+        chosenAdapter,
     );
     if (process.env.INSPECT_DEBUG_ADAPTER) {
         return ['--inspect-brk', adapterPath];
@@ -84,7 +84,7 @@ export class CdtDebugClient extends DebugClient {
             }
             this.connect(
                 this._cdt_adapterProcess.stdout,
-                this._cdt_adapterProcess.stdin
+                this._cdt_adapterProcess.stdin,
             );
             resolve();
         });
@@ -124,7 +124,7 @@ export class CdtDebugClient extends DebugClient {
                     child.once('error', (error) => {
                         reject(error);
                     });
-                }
+                },
             );
             return {
                 processId: process.pid,
@@ -136,7 +136,7 @@ export class CdtDebugClient extends DebugClient {
      * Notify the Debug Adapter by default that this client supports `runInTerminal`.
      */
     public initializeRequest(
-        args?: DebugProtocol.InitializeRequestArguments
+        args?: DebugProtocol.InitializeRequestArguments,
     ): Promise<DebugProtocol.InitializeResponse> {
         if (!args) {
             args = {
@@ -160,7 +160,7 @@ export class CdtDebugClient extends DebugClient {
             path?: string | RegExp;
             line?: number;
             column?: number;
-        }
+        },
     ): Promise<DebugProtocol.StackTraceResponse> {
         const waitForStopped = this.assertStoppedLocation(reason, expected);
         const continueResp = this.continueRequest(args);
@@ -177,7 +177,7 @@ export class CdtDebugClient extends DebugClient {
             path?: string | RegExp;
             line?: number;
             column?: number;
-        }
+        },
     ): Promise<DebugProtocol.StackTraceResponse> {
         const waitForStopped = this.assertStoppedLocation('step', expected);
         const next = this.nextRequest(args);
@@ -194,7 +194,7 @@ export class CdtDebugClient extends DebugClient {
             path?: string | RegExp;
             line?: number;
             column?: number;
-        }
+        },
     ): Promise<DebugProtocol.StackTraceResponse> {
         const waitForStopped = this.assertStoppedLocation('step', expected);
         const next = this.stepInRequest(args);
@@ -211,7 +211,7 @@ export class CdtDebugClient extends DebugClient {
             path?: string | RegExp;
             line?: number;
             column?: number;
-        }
+        },
     ): Promise<DebugProtocol.StackTraceResponse> {
         const waitForStopped = this.assertStoppedLocation('step', expected);
         const next = this.stepOutRequest(args);
@@ -228,7 +228,7 @@ export class CdtDebugClient extends DebugClient {
             path?: string | RegExp;
             line?: number;
             column?: number;
-        }
+        },
     ): Promise<DebugProtocol.StackTraceResponse> {
         const waitForStopped = this.assertStoppedLocation('step', expected);
         const next = this.stepBackRequest(args);
@@ -244,10 +244,10 @@ export class CdtDebugClient extends DebugClient {
     public async waitForOutputEvent(
         category: string,
         output?: string,
-        timeout: number = this.defaultTimeout
+        timeout: number = this.defaultTimeout,
     ): Promise<DebugProtocol.OutputEvent> {
         const isOutputEvent = (
-            event: any
+            event: any,
         ): event is DebugProtocol.OutputEvent => {
             return (
                 !!(event as DebugProtocol.OutputEvent).body &&
@@ -273,8 +273,8 @@ export class CdtDebugClient extends DebugClient {
                             output === undefined
                                 ? ''
                                 : `and output message '${output}'`
-                        } received after ${timeout} ms`
-                    )
+                        } received after ${timeout} ms`,
+                    ),
                 );
             }, timeout);
             this.on('output', outputProcessor);
@@ -310,25 +310,25 @@ export class CdtDebugClient extends DebugClient {
         }
         const json = JSON.stringify(response);
         this['outputStream'].write(
-            `Content-Length: ${Buffer.byteLength(json, 'utf-8')}\r\n\r\n${json}`
+            `Content-Length: ${Buffer.byteLength(json, 'utf-8')}\r\n\r\n${json}`,
         );
     }
 
     public readMemoryRequest(
-        args: DebugProtocol.ReadMemoryArguments
+        args: DebugProtocol.ReadMemoryArguments,
     ): Promise<DebugProtocol.ReadMemoryResponse> {
         return this.send('readMemory', args);
     }
 
     public writeMemoryRequest(
-        args: DebugProtocol.WriteMemoryArguments
+        args: DebugProtocol.WriteMemoryArguments,
     ): Promise<DebugProtocol.WriteMemoryResponse> {
         return this.send('writeMemory', args);
     }
 
     public attachHitBreakpoint(
         attachArgs: any,
-        breakpoint: { line: number; path: string }
+        breakpoint: { line: number; path: string },
     ): Promise<any> {
         return Promise.all([
             this.waitForEvent('initialized')
@@ -386,7 +386,7 @@ CdtDebugClient.prototype['dispatch'] = function dispatch(raw: any): void {
 };
 
 function isRequest(
-    message: DebugProtocol.ProtocolMessage
+    message: DebugProtocol.ProtocolMessage,
 ): message is DebugProtocol.Request {
     return message.type === 'request';
 }

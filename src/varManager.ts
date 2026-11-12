@@ -31,7 +31,7 @@ export class VarManager {
     public getVars(
         frameId: number,
         threadId: number,
-        depth: number
+        depth: number,
     ): VarObjType[] | undefined {
         return this.variableMap.get(this.getKey(frameId, threadId, depth));
     }
@@ -41,7 +41,7 @@ export class VarManager {
         threadId: number,
         depth: number,
         expression: string,
-        type?: string
+        type?: string,
     ): VarObjType | undefined {
         const vars = this.getVars(frameId, threadId, depth);
         if (vars) {
@@ -63,7 +63,7 @@ export class VarManager {
         frameId: number,
         threadId: number,
         depth: number,
-        varname: string
+        varname: string,
     ): VarObjType | undefined {
         const vars = this.getVars(frameId, threadId, depth);
         if (vars) {
@@ -84,7 +84,7 @@ export class VarManager {
         isVar: boolean,
         isChild: boolean,
         varCreateResponse: MIVarCreateResponse,
-        type?: string
+        type?: string,
     ): VarObjType {
         let vars = this.variableMap.get(this.getKey(frameId, threadId, depth));
         if (!vars) {
@@ -118,7 +118,7 @@ export class VarManager {
             for (const varobj of vars) {
                 // Fire-and-forget async cleanup; if it fails, we don't care.
                 sendVarDelete(this.gdb, { varname: varobj.varname }).catch(
-                    () => {}
+                    () => {},
                 );
             }
         }
@@ -128,11 +128,11 @@ export class VarManager {
         frameId: number,
         threadId: number,
         depth: number,
-        varname: string
+        varname: string,
     ): Promise<void> {
         let deleteme: VarObjType | undefined;
         const vars = this.variableMap.get(
-            this.getKey(frameId, threadId, depth)
+            this.getKey(frameId, threadId, depth),
         );
         if (vars) {
             for (const varobj of vars) {
@@ -149,7 +149,7 @@ export class VarManager {
                         frameId,
                         threadId,
                         depth,
-                        child.varname
+                        child.varname,
                     );
                 }
             }
@@ -160,7 +160,7 @@ export class VarManager {
         frameId: number,
         threadId: number,
         depth: number,
-        varobj: VarObjType
+        varobj: VarObjType,
     ): Promise<VarObjType> {
         let returnVar = varobj;
         const vup = await sendVarUpdate(this.gdb, { name: varobj.varname });
@@ -186,7 +186,7 @@ export class VarManager {
                     varobj.expression,
                     varobj.isVar,
                     varobj.isChild,
-                    createResponse
+                    createResponse,
                 );
             }
         }

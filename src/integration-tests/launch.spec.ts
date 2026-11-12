@@ -37,7 +37,7 @@ describe('launch', function () {
             {
                 path: emptySrc,
                 line: 3,
-            }
+            },
         );
     });
 
@@ -46,7 +46,7 @@ describe('launch', function () {
             dc.launchRequest(
                 fillDefaults(this.test, {
                     program: '/does/not/exist',
-                } as LaunchRequestArguments)
+                } as LaunchRequestArguments),
             )
                 .then(reject)
                 .catch(resolve);
@@ -60,7 +60,7 @@ describe('launch', function () {
                 (msg.includes('The system cannot find the path specified') ||
                     msg.includes('No such file or directory') ||
                     msg.includes('not found') ||
-                    msg.includes('Unknown command'))
+                    msg.includes('Unknown command')),
         );
     });
 
@@ -72,21 +72,21 @@ describe('launch', function () {
             {
                 path: emptySpaceSrc,
                 line: 3,
-            }
+            },
         );
     });
 
     it('provides a decent error if program is omitted', async function () {
         const errorMessage = await new Promise<Error>((resolve, reject) => {
             dc.launchRequest(
-                fillDefaults(this.test, {} as LaunchRequestArguments)
+                fillDefaults(this.test, {} as LaunchRequestArguments),
             )
                 .then(reject)
                 .catch(resolve);
         });
 
         expect(errorMessage.message).to.satisfy((msg: string) =>
-            msg.includes('program must be specified')
+            msg.includes('program must be specified'),
         );
     });
 });

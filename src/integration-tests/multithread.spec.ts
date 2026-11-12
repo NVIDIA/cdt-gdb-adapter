@@ -63,12 +63,12 @@ describe('multithread', async function () {
             {
                 path: source,
                 line: lineTags['LINE_MAIN_ALL_THREADS_STARTED'],
-            }
+            },
         );
 
         const threads = await dc.threadsRequest();
         const nameToId = new Map(
-            threads.body.threads.map((thread) => [thread.name, thread.id])
+            threads.body.threads.map((thread) => [thread.name, thread.id]),
         );
         // Make sure all 5 threads are there
         expect(nameToId).to.include.keys(Object.keys(threadNames));
@@ -123,7 +123,7 @@ describe('multithread', async function () {
                     vars.body.variables.map((variable) => [
                         variable.name,
                         variable.value,
-                    ])
+                    ]),
                 );
                 // Make sure we aren't getting the HelloWorld frame's variables.
                 // The calling method (in glibc or similar) may end up with a local
@@ -142,10 +142,10 @@ describe('multithread', async function () {
                     vars.body.variables.map((variable) => [
                         variable.name,
                         variable.value,
-                    ])
+                    ]),
                 );
                 expect(varnameToValue.get('thread_id')).to.equal(
-                    idInProgram.toString()
+                    idInProgram.toString(),
                 );
                 // The "name" variable is a pointer, so is displayed as an address + the
                 // extracted nul terminated string
@@ -169,7 +169,7 @@ describe('multithread', async function () {
                     vars.body.variables.map((variable) => [
                         variable.name,
                         variable.value,
-                    ])
+                    ]),
                 );
                 // Make sure we aren't getting the HelloWorld frame's variables.
                 // The calling method (in glibc or similar) may end up with a local

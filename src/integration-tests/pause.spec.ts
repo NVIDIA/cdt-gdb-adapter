@@ -37,7 +37,7 @@ describe('pause', async () => {
         await dc.launchRequest(
             fillDefaults(this.test, {
                 program: path.join(testProgramsDir, 'loopforever'),
-            })
+            }),
         );
         await dc.configurationDoneRequest();
         const waitForStopped = dc.waitForEvent('stopped');

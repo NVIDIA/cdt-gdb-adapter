@@ -28,13 +28,13 @@ export interface Scope {
 export async function getScopes(
     dc: CdtDebugClient,
     threadIndex = 0,
-    stackIndex = 0
+    stackIndex = 0,
 ): Promise<Scope> {
     // threads
     const threads = await dc.threadsRequest();
     expect(
         threads.body.threads.length,
-        'There are fewer threads than expected.'
+        'There are fewer threads than expected.',
     ).to.be.at.least(threadIndex + 1);
     const thread = threads.body.threads[threadIndex];
     const threadId = thread.id;
@@ -42,7 +42,7 @@ export async function getScopes(
     const stack = await dc.stackTraceRequest({ threadId });
     expect(
         stack.body.stackFrames.length,
-        'There are fewer stack frames than expected.'
+        'There are fewer stack frames than expected.',
     ).to.be.at.least(stackIndex + 1);
     const frame = stack.body.stackFrames[stackIndex];
     const frameId = frame.id;
@@ -72,31 +72,31 @@ export function verifyVariable(
     flags?: {
         hasChildren?: boolean; // default false
         hasMemoryReference?: boolean; // default true
-    }
+    },
 ) {
     expect(variable.name, `The name of ${expectedName} is wrong`).to.equal(
-        expectedName
+        expectedName,
     );
     if (expectedType) {
         expect(variable.type, `The type of ${expectedName} is wrong`).to.equal(
-            expectedType
+            expectedType,
         );
     }
     if (expectedValue) {
         expect(
             variable.value,
-            `The value of ${expectedName} is wrong`
+            `The value of ${expectedName} is wrong`,
         ).to.equal(expectedValue);
     }
     if (flags?.hasChildren) {
         expect(
             variable.variablesReference,
-            `${expectedName} has no children`
+            `${expectedName} has no children`,
         ).to.not.equal(0);
     } else {
         expect(
             variable.variablesReference,
-            `${expectedName} has children`
+            `${expectedName} has children`,
         ).to.equal(0);
     }
     if (flags?.hasMemoryReference || flags?.hasMemoryReference === undefined) {
@@ -117,15 +117,15 @@ export function verifyVariable(
 export function verifyRegister(
     variable: DebugProtocol.Variable,
     expectedName: string,
-    expectedValue?: string
+    expectedValue?: string,
 ) {
     expect(variable.name, `The name of ${expectedName} is wrong`).to.equal(
-        expectedName
+        expectedName,
     );
     if (expectedValue) {
         expect(
             variable.value,
-            `The value of ${expectedName} is wrong`
+            `The value of ${expectedName} is wrong`,
         ).to.equal(expectedValue);
     }
 }
@@ -135,39 +135,39 @@ export function compareVariable(
     varB: DebugProtocol.Variable,
     namesMatch: boolean,
     typesMatch: boolean,
-    valuesMatch: boolean
+    valuesMatch: boolean,
 ) {
     if (namesMatch) {
         expect(
             varA.name,
-            `The name of ${varA.name} and ${varB.name} does not match`
+            `The name of ${varA.name} and ${varB.name} does not match`,
         ).to.equal(varB.name);
     } else {
         expect(
             varA.name,
-            `The name of ${varA.name} and ${varB.name} matches`
+            `The name of ${varA.name} and ${varB.name} matches`,
         ).to.not.equal(varB.name);
     }
     if (typesMatch) {
         expect(
             varA.type,
-            `The type of ${varA.name} and ${varB.name} does not match`
+            `The type of ${varA.name} and ${varB.name} does not match`,
         ).to.equal(varB.type);
     } else {
         expect(
             varA.type,
-            `The type of ${varA.name} and ${varB.name} match`
+            `The type of ${varA.name} and ${varB.name} match`,
         ).to.equal(varB.type);
     }
     if (valuesMatch) {
         expect(
             varA.value,
-            `The value of ${varA.name} and ${varB.name} do not match`
+            `The value of ${varA.name} and ${varB.name} do not match`,
         ).to.equal(varB.value);
     } else {
         expect(
             varA.value,
-            `The value of ${varA.name} and ${varB.name} matches`
+            `The value of ${varA.name} and ${varB.name} matches`,
         ).to.not.equal(varB.value);
     }
 }
@@ -178,12 +178,12 @@ export const testProgramsDir = path.join(
     '..',
     'src',
     'integration-tests',
-    'test-programs'
+    'test-programs',
 );
 
 export async function standardBeforeEach(
     adapter?: string,
-    extraArgs?: string[]
+    extraArgs?: string[],
 ): Promise<CdtDebugClient> {
     const dc: CdtDebugClient = new CdtDebugClient(adapter, extraArgs);
     await dc.start(debugServerPort);
@@ -194,11 +194,11 @@ export async function standardBeforeEach(
 
 export function fillDefaults(
     test?: Runnable,
-    argsIn?: RequestArguments
+    argsIn?: RequestArguments,
 ): RequestArguments {
     if (!test) {
         throw new Error(
-            'A Test object is required (this.test in test body or this.currentTest in beforeEach'
+            'A Test object is required (this.test in test body or this.currentTest in beforeEach',
         );
     }
     const args = argsIn !== undefined ? argsIn : ({} as RequestArguments);
@@ -318,12 +318,12 @@ function getDefaultAdapterCli(): string {
 }
 
 export async function gdbVersionAtLeast(
-    targetVersion: string
+    targetVersion: string,
 ): Promise<boolean> {
     return (
         compareVersions(
             await getGdbVersion(gdbPath || 'cuda-gdb'),
-            targetVersion
+            targetVersion,
         ) >= 0
     );
 }
@@ -347,7 +347,7 @@ export interface LineTags {
  */
 export function resolveLineTagLocations(
     sourceFile: string,
-    tags: LineTags
+    tags: LineTags,
 ): void {
     const lines = fs
         .readFileSync(sourceFile, { encoding: 'utf-8' })

@@ -36,7 +36,7 @@ describe('Memory Test Suite for cdt-gdb-adapter/Memory custom request', function
             {
                 path: memSrc,
                 line: 12,
-            }
+            },
         );
         const threads = await dc.threadsRequest();
         // On windows additional threads can exist to handle signals, therefore find
@@ -70,7 +70,7 @@ describe('Memory Test Suite for cdt-gdb-adapter/Memory custom request', function
     function verifyMemoryReadResult(
         resp: MemoryResponse,
         expectedBytes: string,
-        expectedAddress: number
+        expectedAddress: number,
     ) {
         expect(resp.body.data).eq(expectedBytes);
         expect(resp.body.address).match(/^0x[0-9a-fA-F]+$/);
@@ -116,7 +116,7 @@ describe('Memory Test Suite for cdt-gdb-adapter/Memory custom request', function
             dc.send('cdt-gdb-adapter/Memory', {
                 address: '0',
                 length: 10,
-            })
+            }),
         );
         expect(err.message).contains('Unable to read memory');
     });

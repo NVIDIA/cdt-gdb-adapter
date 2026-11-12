@@ -54,20 +54,20 @@ export function sendDataReadMemoryBytes(
     gdb: GDBBackend,
     address: string,
     size: number,
-    offset = 0
+    offset = 0,
 ): Promise<MIDataReadMemoryBytesResponse> {
     return gdb.sendCommand(
-        `-data-read-memory-bytes -o ${offset} "${address}" ${size}`
+        `-data-read-memory-bytes -o ${offset} "${address}" ${size}`,
     );
 }
 
 export function sendDataWriteMemoryBytes(
     gdb: GDBBackend,
     memoryReference: string,
-    data: string
+    data: string,
 ): Promise<void> {
     return gdb.sendCommand(
-        `-data-write-memory-bytes "${memoryReference}" "${data}"`
+        `-data-write-memory-bytes "${memoryReference}" "${data}"`,
     );
 }
 
@@ -75,19 +75,19 @@ export function sendDataEvaluateExpression(
     gdb: GDBBackend,
     expr: string,
     frameId: number,
-    threadId: number
+    threadId: number,
 ): Promise<MIGDBDataEvaluateExpressionResponse> {
     return gdb.sendCommand(
         `-data-evaluate-expression --frame ${frameId} --thread ${threadId} ${gdb.standardEscape(
-            expr
-        )}`
+            expr,
+        )}`,
     );
 }
 
 // https://sourceware.org/gdb/onlinedocs/gdb/GDB_002fMI-Data-Manipulation.html#The-_002ddata_002ddisassemble-Command
 export async function sendDataDisassemble(
     gdb: GDBBackend,
-    ref: { startAddress: string; endAddress: string } | string
+    ref: { startAddress: string; endAddress: string } | string,
 ): Promise<MIDataDisassembleResponse> {
     // -- 5 == mixed source and disassembly with raw opcodes
     // needs to be deprecated mode 3 for GDB < 7.11
@@ -108,7 +108,7 @@ export async function sendDataDisassemble(
         if (
             !Object.prototype.hasOwnProperty.call(
                 result.asm_insns[0],
-                'line_asm_insn'
+                'line_asm_insn',
             )
         ) {
             // In this case there is no source info available for any instruction,
@@ -137,7 +137,7 @@ export function sendDataListRegisterNames(
         regno?: number[];
         frameId: number;
         threadId: number;
-    }
+    },
 ): Promise<MIListRegisterNamesResponse> {
     let command = `-data-list-register-names --frame ${params.frameId} --thread ${params.threadId}`;
 
@@ -155,7 +155,7 @@ export function sendDataListRegisterValues(
         regno?: number[];
         frameId: number;
         threadId: number;
-    }
+    },
 ): Promise<MIListRegisterValuesResponse> {
     let command = `-data-list-register-values --frame ${params.frameId} --thread ${params.threadId} ${params.fmt}`;
 

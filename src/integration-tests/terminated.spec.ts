@@ -40,7 +40,7 @@ describe('terminated', function () {
             {
                 path: emptySrc,
                 line: 3,
-            }
+            },
         );
 
         await Promise.all([
@@ -60,7 +60,7 @@ describe('terminated', function () {
             dc.launch(
                 fillDefaults(this.test, {
                     program: emptyProgram,
-                } as LaunchRequestArguments)
+                } as LaunchRequestArguments),
             ),
         ]);
     });

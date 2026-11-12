@@ -271,7 +271,7 @@ export class GDBDebugSession extends LoggingDebugSession {
                 if (configStr.startsWith('@')) {
                     const configFile = configStr.slice(1);
                     configJson = JSON.parse(
-                        fs.readFileSync(configFile).toString('utf8')
+                        fs.readFileSync(configFile).toString('utf8'),
                     );
                 } else {
                     configJson = JSON.parse(configStr);
@@ -293,7 +293,7 @@ export class GDBDebugSession extends LoggingDebugSession {
      */
     protected applyRequestArguments(
         request: 'launch' | 'attach',
-        args: LaunchRequestArguments | AttachRequestArguments
+        args: LaunchRequestArguments | AttachRequestArguments,
     ): ['launch' | 'attach', LaunchRequestArguments | AttachRequestArguments] {
         const frozenRequest = GDBDebugSession.frozenRequestArguments?.request;
         if (frozenRequest === 'launch' || frozenRequest === 'attach') {
@@ -321,7 +321,7 @@ export class GDBDebugSession extends LoggingDebugSession {
     protected customRequest(
         command: string,
         response: DebugProtocol.Response,
-        args: any
+        args: any,
     ): void {
         if (command === 'cdt-gdb-adapter/Memory') {
             this.memoryRequest(response as MemoryResponse, args);
@@ -348,7 +348,7 @@ export class GDBDebugSession extends LoggingDebugSession {
 
     protected initializeRequest(
         response: DebugProtocol.InitializeResponse,
-        args: DebugProtocol.InitializeRequestArguments
+        args: DebugProtocol.InitializeRequestArguments,
     ): void {
         this.supportsRunInTerminalRequest =
             args.supportsRunInTerminalRequest === true;
@@ -363,6 +363,7 @@ export class GDBDebugSession extends LoggingDebugSession {
         response.body.supportsFunctionBreakpoints = true;
         // response.body.supportsSetExpression = true;
         response.body.supportsDisassembleRequest = true;
+        response.body.supportsSteppingGranularity = true;
         response.body.supportsReadMemoryRequest = true;
         response.body.supportsWriteMemoryRequest = true;
         this.sendResponse(response);
@@ -371,11 +372,11 @@ export class GDBDebugSession extends LoggingDebugSession {
     protected async attachOrLaunchRequest(
         response: DebugProtocol.Response,
         request: 'launch' | 'attach',
-        args: LaunchRequestArguments | AttachRequestArguments
+        args: LaunchRequestArguments | AttachRequestArguments,
     ) {
         logger.setup(
             args.verbose ? Logger.LogLevel.Verbose : Logger.LogLevel.Warn,
-            args.logFile || false
+            args.logFile || false,
         );
 
         this.gdb.on('consoleStreamOutput', (output, category) => {
@@ -383,10 +384,10 @@ export class GDBDebugSession extends LoggingDebugSession {
         });
 
         this.gdb.on('execAsync', (resultClass, resultData) =>
-            this.handleGDBAsync(resultClass, resultData)
+            this.handleGDBAsync(resultClass, resultData),
         );
         this.gdb.on('notifyAsync', (resultClass, resultData) =>
-            this.handleGDBNotify(resultClass, resultData)
+            this.handleGDBNotify(resultClass, resultData),
         );
 
         await this.spawn(args);
@@ -394,7 +395,7 @@ export class GDBDebugSession extends LoggingDebugSession {
             this.sendErrorResponse(
                 response,
                 1,
-                'The program must be specified in the request arguments'
+                'The program must be specified in the request arguments',
             );
             return;
         }
@@ -408,7 +409,7 @@ export class GDBDebugSession extends LoggingDebugSession {
                 pid: attachArgs.processId,
             });
             this.sendEvent(
-                new OutputEvent(`attached to process ${attachArgs.processId}`)
+                new OutputEvent(`attached to process ${attachArgs.processId}`),
             );
         }
 
@@ -429,59 +430,59 @@ export class GDBDebugSession extends LoggingDebugSession {
 
     protected async attachRequest(
         response: DebugProtocol.AttachResponse,
-        args: AttachRequestArguments
+        args: AttachRequestArguments,
     ): Promise<void> {
         try {
             const [request, resolvedArgs] = this.applyRequestArguments(
                 'attach',
-                args
+                args,
             );
             await this.attachOrLaunchRequest(response, request, resolvedArgs);
         } catch (err) {
             this.sendErrorResponse(
                 response,
                 1,
-                err instanceof Error ? err.message : String(err)
+                err instanceof Error ? err.message : String(err),
             );
         }
     }
 
     protected async launchRequest(
         response: DebugProtocol.LaunchResponse,
-        args: LaunchRequestArguments
+        args: LaunchRequestArguments,
     ): Promise<void> {
         try {
             const [request, resolvedArgs] = this.applyRequestArguments(
                 'launch',
-                args
+                args,
             );
             await this.attachOrLaunchRequest(response, request, resolvedArgs);
         } catch (err) {
             this.sendErrorResponse(
                 response,
                 1,
-                err instanceof Error ? err.message : String(err)
+                err instanceof Error ? err.message : String(err),
             );
         }
     }
 
     protected async spawn(
-        args: LaunchRequestArguments | AttachRequestArguments
+        args: LaunchRequestArguments | AttachRequestArguments,
     ) {
         if (args.openGdbConsole) {
             if (!this.supportsGdbConsole) {
                 logger.warn(
-                    'cdt-gdb-adapter: openGdbConsole is not supported on this platform'
+                    'cdt-gdb-adapter: openGdbConsole is not supported on this platform',
                 );
             } else if (!(await this.gdb.supportsNewUi(args.gdb))) {
                 logger.warn(
                     `cdt-gdb-adapter: new-ui command not detected (${
                         args.gdb || 'cuda-gdb'
-                    })`
+                    })`,
                 );
             } else {
                 logger.verbose(
-                    'cdt-gdb-adapter: spawning gdb console in client terminal'
+                    'cdt-gdb-adapter: spawning gdb console in client terminal',
                 );
                 return this.spawnInClientTerminal(args);
             }
@@ -492,7 +493,7 @@ export class GDBDebugSession extends LoggingDebugSession {
     protected async spawnInClientTerminal(
         args:
             | DebugProtocol.LaunchRequestArguments
-            | DebugProtocol.AttachRequestArguments
+            | DebugProtocol.AttachRequestArguments,
     ) {
         return this.gdb.spawnInClientTerminal(
             args as LaunchRequestArguments | AttachRequestArguments,
@@ -508,15 +509,15 @@ export class GDBDebugSession extends LoggingDebugSession {
                                 args: command,
                             } as DebugProtocol.RunInTerminalRequestArguments,
                             5000,
-                            resolve
-                        )
+                            resolve,
+                        ),
                 );
                 if (!response.success) {
                     const message = `could not start the terminal on the client: ${response.message}`;
                     logger.error(message);
                     throw new Error(message);
                 }
-            }
+            },
         );
     }
 
@@ -529,16 +530,16 @@ export class GDBDebugSession extends LoggingDebugSession {
      */
     protected async setBreakPointsRequest(
         response: DebugProtocol.SetBreakpointsResponse,
-        args: DebugProtocol.SetBreakpointsArguments
+        args: DebugProtocol.SetBreakpointsArguments,
     ): Promise<void> {
         return this.withWaitPausedMutex(() =>
-            this.setBreakPointsRequestLocked(response, args)
+            this.setBreakPointsRequestLocked(response, args),
         );
     }
 
     private async setBreakPointsRequestLocked(
         response: DebugProtocol.SetBreakpointsResponse,
-        args: DebugProtocol.SetBreakpointsArguments
+        args: DebugProtocol.SetBreakpointsArguments,
     ): Promise<void> {
         this.waitPausedNeeded = this.isRunning;
         if (this.waitPausedNeeded) {
@@ -552,7 +553,7 @@ export class GDBDebugSession extends LoggingDebugSession {
 
                 this.waitPausedThreadId = parseInt(
                     threadInfo['current-thread-id'],
-                    10
+                    10,
                 );
                 this.gdb.pause(this.waitPausedThreadId);
             } else {
@@ -570,7 +571,7 @@ export class GDBDebugSession extends LoggingDebugSession {
             const file = args.source.path as string;
             const gdbOriginalLocationPrefix = await breakpointLocation(
                 this.gdb,
-                file
+                file,
             );
             const gdbbps = result.BreakpointTable.body.filter((gdbbp) => {
                 // Ignore "children" breakpoint of <MULTIPLE> entries
@@ -584,7 +585,7 @@ export class GDBDebugSession extends LoggingDebugSession {
                 }
                 if (
                     !gdbbp['original-location'].startsWith(
-                        gdbOriginalLocationPrefix
+                        gdbOriginalLocationPrefix,
                     )
                 ) {
                     return false;
@@ -613,24 +614,23 @@ export class GDBDebugSession extends LoggingDebugSession {
                         gdbbp['original-location'] === gdbOriginalLocation &&
                         vsbpCond === gdbbpCond
                     );
-                }
+                },
             );
 
             // Delete before insert to avoid breakpoint clashes in gdb
             if (deletes.length > 0) {
                 await mi.sendBreakDelete(this.gdb, { breakpoints: deletes });
-                deletes.forEach(
-                    (breakpoint) => delete this.logPointMessages[breakpoint]
-                );
             }
 
-            // Reset logPoints
-            this.logPointMessages = {};
+            // Reset logPoints for this source only; other sources' requests own their entries
+            gdbbps.forEach(
+                (gdbbp) => delete this.logPointMessages[gdbbp.number],
+            );
 
             // Set up logpoint messages and return a formatted breakpoint for the response body
             const createState = (
                 vsbp: DebugProtocol.SourceBreakpoint,
-                gdbbp: mi.MIBreakpointInfo
+                gdbbp: mi.MIBreakpointInfo,
             ): DebugProtocol.Breakpoint => {
                 if (vsbp.logMessage) {
                     this.logPointMessages[gdbbp.number] = vsbp.logMessage;
@@ -643,10 +643,15 @@ export class GDBDebugSession extends LoggingDebugSession {
                     line = vsbp.line;
                 }
 
+                // Check if breakpoint is pending (address not yet valid).
+                // Useful for CUDA kernels, which get loaded into memory at runtime.
+                const isPending =
+                    gdbbp.addr === '<PENDING>' || gdbbp.addr === undefined;
+
                 return {
                     id: parseInt(gdbbp.number, 10),
                     line,
-                    verified: true,
+                    verified: !isPending,
                 };
             };
 
@@ -664,13 +669,13 @@ export class GDBDebugSession extends LoggingDebugSession {
                 if (vsbp.hitCondition !== undefined) {
                     ignoreCount = parseInt(
                         vsbp.hitCondition.replace(ignoreCountRegex, ''),
-                        10
+                        10,
                     );
                     if (isNaN(ignoreCount)) {
                         this.sendEvent(
                             new OutputEvent(
-                                `Unable to decode expression: ${vsbp.hitCondition}`
-                            )
+                                `Unable to decode expression: ${vsbp.hitCondition}`,
+                            ),
                         );
                         continue;
                     }
@@ -712,7 +717,7 @@ export class GDBDebugSession extends LoggingDebugSession {
             this.sendErrorResponse(
                 response,
                 1,
-                err instanceof Error ? err.message : String(err)
+                err instanceof Error ? err.message : String(err),
             );
         }
 
@@ -727,16 +732,16 @@ export class GDBDebugSession extends LoggingDebugSession {
 
     protected async setFunctionBreakPointsRequest(
         response: DebugProtocol.SetFunctionBreakpointsResponse,
-        args: DebugProtocol.SetFunctionBreakpointsArguments
+        args: DebugProtocol.SetFunctionBreakpointsArguments,
     ) {
         return this.withWaitPausedMutex(() =>
-            this.setFunctionBreakPointsRequestLocked(response, args)
+            this.setFunctionBreakPointsRequestLocked(response, args),
         );
     }
 
     private async setFunctionBreakPointsRequestLocked(
         response: DebugProtocol.SetFunctionBreakpointsResponse,
-        args: DebugProtocol.SetFunctionBreakpointsArguments
+        args: DebugProtocol.SetFunctionBreakpointsArguments,
     ): Promise<void> {
         this.waitPausedNeeded = this.isRunning;
         if (this.waitPausedNeeded) {
@@ -750,7 +755,7 @@ export class GDBDebugSession extends LoggingDebugSession {
 
                 this.waitPausedThreadId = parseInt(
                     threadInfo['current-thread-id'],
-                    10
+                    10,
                 );
                 this.gdb.pause(this.waitPausedThreadId);
             } else {
@@ -781,29 +786,37 @@ export class GDBDebugSession extends LoggingDebugSession {
 
                     const originalLocation = breakpointFunctionLocation(
                         this.gdb,
-                        vsbp.name
+                        vsbp.name,
                     );
                     return !!(
                         gdbbp['original-location'] === originalLocation &&
                         vsbpCond === gdbbpCond
                     );
-                }
+                },
             );
 
             // Delete before insert to avoid breakpoint clashes in gdb
             if (deletes.length > 0) {
                 await mi.sendBreakDelete(this.gdb, { breakpoints: deletes });
                 this.functionBreakpoints = this.functionBreakpoints.filter(
-                    (fnbp) => deletes.indexOf(fnbp) === -1
+                    (fnbp) => deletes.indexOf(fnbp) === -1,
                 );
             }
 
             const createActual = (
-                breakpoint: mi.MIBreakpointInfo
-            ): DebugProtocol.Breakpoint => ({
-                id: parseInt(breakpoint.number, 10),
-                verified: true,
-            });
+                breakpoint: mi.MIBreakpointInfo,
+            ): DebugProtocol.Breakpoint => {
+                // Check if breakpoint is pending (address not yet valid).
+                // Useful for CUDA kernels, which get loaded into memory at runtime.
+                const isPending =
+                    breakpoint.addr === '<PENDING>' ||
+                    breakpoint.addr === undefined;
+
+                return {
+                    id: parseInt(breakpoint.number, 10),
+                    verified: !isPending,
+                };
+            };
 
             const actual: DebugProtocol.Breakpoint[] = [];
             // const actual = existing.map((bp) => createActual(bp.gdbbp));
@@ -820,7 +833,7 @@ export class GDBDebugSession extends LoggingDebugSession {
                         bp.vsbp.name,
                         {
                             hardware: this.gdb.isUseHWBreakpoint(),
-                        }
+                        },
                     );
                     this.functionBreakpoints.push(gdbbp.bkpt.number);
                     actual.push(createActual(gdbbp.bkpt));
@@ -842,7 +855,7 @@ export class GDBDebugSession extends LoggingDebugSession {
             this.sendErrorResponse(
                 response,
                 1,
-                err instanceof Error ? err.message : String(err)
+                err instanceof Error ? err.message : String(err),
             );
         }
 
@@ -870,7 +883,7 @@ export class GDBDebugSession extends LoggingDebugSession {
     protected resolveBreakpoints<T>(
         vsbps: T[],
         gdbbps: mi.MIBreakpointInfo[],
-        matchFn: (vsbp: T, gdbbp: mi.MIBreakpointInfo) => boolean
+        matchFn: (vsbp: T, gdbbp: mi.MIBreakpointInfo) => boolean,
     ): {
         resolved: Array<{ vsbp: T; gdbbp?: mi.MIBreakpointInfo }>;
         deletes: string[];
@@ -894,12 +907,12 @@ export class GDBDebugSession extends LoggingDebugSession {
 
     protected async configurationDoneRequest(
         response: DebugProtocol.ConfigurationDoneResponse,
-        _args: DebugProtocol.ConfigurationDoneArguments
+        _args: DebugProtocol.ConfigurationDoneArguments,
     ): Promise<void> {
         try {
             if (this.isAttach) {
                 await this.withWaitPausedMutex(() =>
-                    this.configurationDoneAttachRequestLocked(response)
+                    this.configurationDoneAttachRequestLocked(response),
                 );
             } else {
                 await mi.sendExecRun(this.gdb);
@@ -909,13 +922,13 @@ export class GDBDebugSession extends LoggingDebugSession {
             this.sendErrorResponse(
                 response,
                 100,
-                err instanceof Error ? err.message : String(err)
+                err instanceof Error ? err.message : String(err),
             );
         }
     }
 
     private async configurationDoneAttachRequestLocked(
-        response: DebugProtocol.ConfigurationDoneResponse
+        response: DebugProtocol.ConfigurationDoneResponse,
     ): Promise<void> {
         // Leave the inferior in its post-attach paused state; matches gdb and cuda-gdb attach behavior.
         if (this.isRunning) {
@@ -932,7 +945,7 @@ export class GDBDebugSession extends LoggingDebugSession {
                 const threadInfo = await mi.sendThreadInfoRequest(this.gdb, {});
                 this.waitPausedThreadId = parseInt(
                     threadInfo['current-thread-id'],
-                    10
+                    10,
                 );
                 this.gdb.pause(this.waitPausedThreadId);
             } else {
@@ -949,12 +962,12 @@ export class GDBDebugSession extends LoggingDebugSession {
             const threadInfo = await mi.sendThreadInfoRequest(this.gdb, {});
             const currentThreadId = parseInt(
                 threadInfo['current-thread-id'],
-                10
+                10,
             );
             this.sendStoppedEvent(
                 'entry',
                 currentThreadId,
-                !this.gdb.isNonStopMode()
+                !this.gdb.isNonStopMode(),
             );
         }
     }
@@ -975,13 +988,13 @@ export class GDBDebugSession extends LoggingDebugSession {
         if (!this.isRunning) {
             const result = await mi.sendThreadInfoRequest(this.gdb, {});
             this.threads = result.threads.map((thread) =>
-                this.convertThread(thread)
+                this.convertThread(thread),
             );
         }
     }
 
     protected async threadsRequest(
-        response: DebugProtocol.ThreadsResponse
+        response: DebugProtocol.ThreadsResponse,
     ): Promise<void> {
         try {
             await this.updateThreadList();
@@ -995,14 +1008,14 @@ export class GDBDebugSession extends LoggingDebugSession {
             this.sendErrorResponse(
                 response,
                 1,
-                err instanceof Error ? err.message : String(err)
+                err instanceof Error ? err.message : String(err),
             );
         }
     }
 
     protected async stackTraceRequest(
         response: DebugProtocol.StackTraceResponse,
-        args: DebugProtocol.StackTraceArguments
+        args: DebugProtocol.StackTraceArguments,
     ): Promise<void> {
         try {
             const threadId = args.threadId;
@@ -1029,7 +1042,7 @@ export class GDBDebugSession extends LoggingDebugSession {
                 if (frame.fullname) {
                     source = new Source(
                         path.basename(frame.file || frame.fullname),
-                        frame.fullname
+                        frame.fullname,
                     );
                 }
                 let line;
@@ -1045,7 +1058,7 @@ export class GDBDebugSession extends LoggingDebugSession {
                     frameHandle,
                     name,
                     source,
-                    line
+                    line,
                 ) as DebugProtocol.StackFrame;
                 sf.instructionPointerReference = frame.addr;
                 return sf;
@@ -1061,46 +1074,54 @@ export class GDBDebugSession extends LoggingDebugSession {
             this.sendErrorResponse(
                 response,
                 1,
-                err instanceof Error ? err.message : String(err)
+                err instanceof Error ? err.message : String(err),
             );
         }
     }
 
     protected async nextRequest(
         response: DebugProtocol.NextResponse,
-        args: DebugProtocol.NextArguments
+        args: DebugProtocol.NextArguments,
     ): Promise<void> {
         try {
-            await mi.sendExecNext(this.gdb, args.threadId);
+            if (args.granularity === 'instruction') {
+                await mi.sendExecNextInstruction(this.gdb, args.threadId);
+            } else {
+                await mi.sendExecNext(this.gdb, args.threadId);
+            }
             this.sendResponse(response);
         } catch (err) {
             this.sendErrorResponse(
                 response,
                 1,
-                err instanceof Error ? err.message : String(err)
+                err instanceof Error ? err.message : String(err),
             );
         }
     }
 
     protected async stepInRequest(
         response: DebugProtocol.StepInResponse,
-        args: DebugProtocol.StepInArguments
+        args: DebugProtocol.StepInArguments,
     ): Promise<void> {
         try {
-            await mi.sendExecStep(this.gdb, args.threadId);
+            if (args.granularity === 'instruction') {
+                await mi.sendExecStepInstruction(this.gdb, args.threadId);
+            } else {
+                await mi.sendExecStep(this.gdb, args.threadId);
+            }
             this.sendResponse(response);
         } catch (err) {
             this.sendErrorResponse(
                 response,
                 1,
-                err instanceof Error ? err.message : String(err)
+                err instanceof Error ? err.message : String(err),
             );
         }
     }
 
     protected async stepOutRequest(
         response: DebugProtocol.StepOutResponse,
-        args: DebugProtocol.StepOutArguments
+        args: DebugProtocol.StepOutArguments,
     ): Promise<void> {
         try {
             await mi.sendExecFinish(this.gdb, args.threadId);
@@ -1109,14 +1130,14 @@ export class GDBDebugSession extends LoggingDebugSession {
             this.sendErrorResponse(
                 response,
                 1,
-                err instanceof Error ? err.message : String(err)
+                err instanceof Error ? err.message : String(err),
             );
         }
     }
 
     protected async continueRequest(
         response: DebugProtocol.ContinueResponse,
-        args: DebugProtocol.ContinueArguments
+        args: DebugProtocol.ContinueArguments,
     ): Promise<void> {
         try {
             await mi.sendExecContinue(this.gdb, args.threadId);
@@ -1134,14 +1155,14 @@ export class GDBDebugSession extends LoggingDebugSession {
             this.sendErrorResponse(
                 response,
                 1,
-                err instanceof Error ? err.message : String(err)
+                err instanceof Error ? err.message : String(err),
             );
         }
     }
 
     protected async pauseRequest(
         response: DebugProtocol.PauseResponse,
-        args: DebugProtocol.PauseArguments
+        args: DebugProtocol.PauseArguments,
     ): Promise<void> {
         try {
             this.gdb.pause(args.threadId);
@@ -1150,14 +1171,14 @@ export class GDBDebugSession extends LoggingDebugSession {
             this.sendErrorResponse(
                 response,
                 1,
-                err instanceof Error ? err.message : String(err)
+                err instanceof Error ? err.message : String(err),
             );
         }
     }
 
     protected scopesRequest(
         response: DebugProtocol.ScopesResponse,
-        args: DebugProtocol.ScopesArguments
+        args: DebugProtocol.ScopesArguments,
     ): void {
         const frame: FrameVariableReference = {
             type: 'frame',
@@ -1175,7 +1196,7 @@ export class GDBDebugSession extends LoggingDebugSession {
                 new Scope(
                     'Registers',
                     this.variableHandles.create(registers),
-                    true
+                    true,
                 ),
             ],
         };
@@ -1185,7 +1206,7 @@ export class GDBDebugSession extends LoggingDebugSession {
 
     protected async variablesRequest(
         response: DebugProtocol.VariablesResponse,
-        args: DebugProtocol.VariablesArguments
+        args: DebugProtocol.VariablesArguments,
     ): Promise<void> {
         const variables = new Array<DebugProtocol.Variable>();
         response.body = {
@@ -1201,9 +1222,8 @@ export class GDBDebugSession extends LoggingDebugSession {
                 response.body.variables =
                     await this.handleVariableRequestRegister(ref);
             } else if (ref.type === 'frame') {
-                response.body.variables = await this.handleVariableRequestFrame(
-                    ref
-                );
+                response.body.variables =
+                    await this.handleVariableRequestFrame(ref);
             } else if (ref.type === 'object') {
                 response.body.variables =
                     await this.handleVariableRequestObject(ref);
@@ -1213,14 +1233,14 @@ export class GDBDebugSession extends LoggingDebugSession {
             this.sendErrorResponse(
                 response,
                 1,
-                err instanceof Error ? err.message : String(err)
+                err instanceof Error ? err.message : String(err),
             );
         }
     }
 
     protected async setVariableRequest(
         response: DebugProtocol.SetVariableResponse,
-        args: DebugProtocol.SetVariableArguments
+        args: DebugProtocol.SetVariableArguments,
     ): Promise<void> {
         try {
             const ref = this.variableHandles.get(args.variablesReference);
@@ -1247,7 +1267,7 @@ export class GDBDebugSession extends LoggingDebugSession {
                 frame.threadId,
                 depth,
                 varname,
-                ref.type
+                ref.type,
             );
             if (!varobj && ref.type === 'registers') {
                 const varCreateResponse = await mi.sendVarCreate(this.gdb, {
@@ -1263,7 +1283,7 @@ export class GDBDebugSession extends LoggingDebugSession {
                     false,
                     false,
                     varCreateResponse,
-                    ref.type
+                    ref.type,
                 );
                 await mi.sendVarSetFormatToHex(this.gdb, varobj.varname);
             }
@@ -1297,7 +1317,7 @@ export class GDBDebugSession extends LoggingDebugSession {
                                 frame.frameId,
                                 frame.threadId,
                                 depth,
-                                grandchildVarname
+                                grandchildVarname,
                             );
                             try {
                                 assign = await mi.sendVarAssign(this.gdb, {
@@ -1331,7 +1351,7 @@ export class GDBDebugSession extends LoggingDebugSession {
             this.sendErrorResponse(
                 response,
                 1,
-                err instanceof Error ? err.message : String(err)
+                err instanceof Error ? err.message : String(err),
             );
         }
         this.sendResponse(response);
@@ -1345,7 +1365,7 @@ export class GDBDebugSession extends LoggingDebugSession {
 
     protected async evaluateRequest(
         response: DebugProtocol.EvaluateResponse,
-        args: DebugProtocol.EvaluateArguments
+        args: DebugProtocol.EvaluateArguments,
     ): Promise<void> {
         response.body = {
             result: 'Error: could not evaluate expression',
@@ -1354,7 +1374,7 @@ export class GDBDebugSession extends LoggingDebugSession {
         try {
             if (args.frameId === undefined) {
                 throw new Error(
-                    'Evaluation of expression without frameId is not supported.'
+                    'Evaluation of expression without frameId is not supported.',
                 );
             }
 
@@ -1371,7 +1391,7 @@ export class GDBDebugSession extends LoggingDebugSession {
                 frame.frameId,
                 frame.threadId,
                 depth,
-                args.expression
+                args.expression,
             );
             if (!varobj) {
                 const varCreateResponse = await mi.sendVarCreate(this.gdb, {
@@ -1386,7 +1406,7 @@ export class GDBDebugSession extends LoggingDebugSession {
                     args.expression,
                     false,
                     false,
-                    varCreateResponse
+                    varCreateResponse,
                 );
             } else {
                 const vup = await mi.sendVarUpdate(this.gdb, {
@@ -1403,7 +1423,7 @@ export class GDBDebugSession extends LoggingDebugSession {
                             frame.frameId,
                             frame.threadId,
                             depth,
-                            varobj.varname
+                            varobj.varname,
                         );
                         const varCreateResponse = await mi.sendVarCreate(
                             this.gdb,
@@ -1411,7 +1431,7 @@ export class GDBDebugSession extends LoggingDebugSession {
                                 expression: args.expression,
                                 frameId: frame.frameId,
                                 threadId: frame.threadId,
-                            }
+                            },
                         );
                         varobj = this.gdb.varManager.addVar(
                             frame.frameId,
@@ -1420,7 +1440,7 @@ export class GDBDebugSession extends LoggingDebugSession {
                             args.expression,
                             false,
                             false,
-                            varCreateResponse
+                            varCreateResponse,
                         );
                     }
                 }
@@ -1445,7 +1465,7 @@ export class GDBDebugSession extends LoggingDebugSession {
             this.sendErrorResponse(
                 response,
                 1,
-                err instanceof Error ? err.message : String(err)
+                err instanceof Error ? err.message : String(err),
             );
         }
     }
@@ -1458,13 +1478,13 @@ export class GDBDebugSession extends LoggingDebugSession {
         try {
             if (typeof args.address !== 'string') {
                 throw new Error(
-                    `Invalid type for 'address', expected string, got ${typeof args.address}`
+                    `Invalid type for 'address', expected string, got ${typeof args.address}`,
                 );
             }
 
             if (typeof args.length !== 'number') {
                 throw new Error(
-                    `Invalid type for 'length', expected number, got ${typeof args.length}`
+                    `Invalid type for 'length', expected number, got ${typeof args.length}`,
                 );
             }
 
@@ -1473,7 +1493,7 @@ export class GDBDebugSession extends LoggingDebugSession {
                 typeof args.offset !== 'undefined'
             ) {
                 throw new Error(
-                    `Invalid type for 'offset', expected number or undefined, got ${typeof args.offset}`
+                    `Invalid type for 'offset', expected number or undefined, got ${typeof args.offset}`,
                 );
             }
 
@@ -1483,7 +1503,7 @@ export class GDBDebugSession extends LoggingDebugSession {
                 this.gdb,
                 typedArgs.address,
                 typedArgs.length,
-                typedArgs.offset
+                typedArgs.offset,
             );
             response.body = {
                 data: result.memory[0].contents,
@@ -1494,7 +1514,7 @@ export class GDBDebugSession extends LoggingDebugSession {
             this.sendErrorResponse(
                 response,
                 1,
-                err instanceof Error ? err.message : String(err)
+                err instanceof Error ? err.message : String(err),
             );
         }
     }
@@ -1504,7 +1524,7 @@ export class GDBDebugSession extends LoggingDebugSession {
         instructions: DebugProtocol.DisassembledInstruction[],
         instructionsToSkip: number,
         maxInstructionsToWrite?: number,
-        skippedInstructions?: DebugProtocol.DisassembledInstruction[]
+        skippedInstructions?: DebugProtocol.DisassembledInstruction[],
     ): {
         instructionsSkipped: number;
         instructionsWritten: number;
@@ -1575,7 +1595,7 @@ export class GDBDebugSession extends LoggingDebugSession {
 
         if (!instructionsWritten) {
             logger.verbose(
-                `[Disassemble request] No instructions flattened. Instructions skipped: ${instructionsSkipped}, Total bytes: ${offsetDisplaced}`
+                `[Disassemble request] No instructions flattened. Instructions skipped: ${instructionsSkipped}, Total bytes: ${offsetDisplaced}`,
             );
         } else {
             const format = (text: string, width: number) =>
@@ -1593,21 +1613,21 @@ export class GDBDebugSession extends LoggingDebugSession {
             const announceWidth = instructionsSkipped ? 25 : 17;
 
             logger.verbose(
-                `[Disassemble request] Flatten report: Instructions skipped: ${instructionsSkipped}, Instructions written: ${instructionsWritten}, Total bytes: ${offsetDisplaced}`
+                `[Disassemble request] Flatten report: Instructions skipped: ${instructionsSkipped}, Instructions written: ${instructionsWritten}, Total bytes: ${offsetDisplaced}`,
             );
             logger.verbose(
                 `[Disassemble request] Flatten report -ctnd-: ${format(
                     'First instruction',
-                    announceWidth
+                    announceWidth,
                 )} --> ${toString(
-                    instructions[instructions.length - instructionsWritten]
-                )}`
+                    instructions[instructions.length - instructionsWritten],
+                )}`,
             );
             logger.verbose(
                 `[Disassemble request] Flatten report -ctnd-: ${format(
                     'Last instruction',
-                    announceWidth
-                )} --> ${toString(instructions[instructions.length - 1])}`
+                    announceWidth,
+                )} --> ${toString(instructions[instructions.length - 1])}`,
             );
             if (
                 instructionsSkipped &&
@@ -1617,20 +1637,20 @@ export class GDBDebugSession extends LoggingDebugSession {
                 logger.verbose(
                     `[Disassemble request] Flatten report -ctnd-: ${format(
                         'First instruction skipped',
-                        announceWidth
-                    )} --> ${toString(firstInstructionSkipped)}`
+                        announceWidth,
+                    )} --> ${toString(firstInstructionSkipped)}`,
                 );
                 logger.verbose(
                     `[Disassemble request] Flatten report -ctnd-: ${format(
                         'Last instruction skipped',
-                        announceWidth
-                    )} --> ${toString(lastInstructionSkipped)}`
+                        announceWidth,
+                    )} --> ${toString(lastInstructionSkipped)}`,
                 );
             }
             logger.verbose(
                 `[Disassemble request] Flatten report -ctnd-: Last instruction length: 0x${lastInstructionLength.toString(
-                    16
-                )}`
+                    16,
+                )}`,
             );
         }
 
@@ -1643,7 +1663,7 @@ export class GDBDebugSession extends LoggingDebugSession {
 
     protected async disassembleRequest(
         response: DebugProtocol.DisassembleResponse,
-        args: CDTDisassembleArguments
+        args: CDTDisassembleArguments,
     ) {
         try {
             const meanSizeOfInstruction = 4;
@@ -1685,7 +1705,7 @@ export class GDBDebugSession extends LoggingDebugSession {
                             result.asm_insns,
                             instructions,
                             0,
-                            args.instructionCount - instructions.length
+                            args.instructionCount - instructions.length,
                         );
 
                     startOffset += offsetDisplaced;
@@ -1731,14 +1751,14 @@ export class GDBDebugSession extends LoggingDebugSession {
             this.sendErrorResponse(
                 response,
                 1,
-                err instanceof Error ? err.message : String(err)
+                err instanceof Error ? err.message : String(err),
             );
         }
     }
 
     protected async readMemoryRequest(
         response: DebugProtocol.ReadMemoryResponse,
-        args: DebugProtocol.ReadMemoryArguments
+        args: DebugProtocol.ReadMemoryArguments,
     ): Promise<void> {
         try {
             if (args.count) {
@@ -1746,7 +1766,7 @@ export class GDBDebugSession extends LoggingDebugSession {
                     this.gdb,
                     args.memoryReference,
                     args.count,
-                    args.offset
+                    args.offset,
                 );
                 response.body = {
                     data: hexToBase64(result.memory[0].contents),
@@ -1760,7 +1780,7 @@ export class GDBDebugSession extends LoggingDebugSession {
             this.sendErrorResponse(
                 response,
                 1,
-                err instanceof Error ? err.message : String(err)
+                err instanceof Error ? err.message : String(err),
             );
         }
     }
@@ -1770,7 +1790,7 @@ export class GDBDebugSession extends LoggingDebugSession {
      */
     protected async writeMemoryRequest(
         response: DebugProtocol.WriteMemoryResponse,
-        args: DebugProtocol.WriteMemoryArguments
+        args: DebugProtocol.WriteMemoryArguments,
     ) {
         try {
             const { memoryReference, data } = args;
@@ -1778,33 +1798,33 @@ export class GDBDebugSession extends LoggingDebugSession {
             const typeofContent = typeof data;
             if (typeofAddress !== 'string') {
                 throw new Error(
-                    `Invalid type for 'address', expected string, got ${typeofAddress}`
+                    `Invalid type for 'address', expected string, got ${typeofAddress}`,
                 );
             }
             if (typeofContent !== 'string') {
                 throw new Error(
-                    `Invalid type for 'content', expected string, got ${typeofContent}`
+                    `Invalid type for 'content', expected string, got ${typeofContent}`,
                 );
             }
             const hexContent = base64ToHex(data);
             await sendDataWriteMemoryBytes(
                 this.gdb,
                 memoryReference,
-                hexContent
+                hexContent,
             );
             this.sendResponse(response);
         } catch (err) {
             this.sendErrorResponse(
                 response,
                 1,
-                err instanceof Error ? err.message : String(err)
+                err instanceof Error ? err.message : String(err),
             );
         }
     }
 
     protected async disconnectRequest(
         response: DebugProtocol.DisconnectResponse,
-        _args: DebugProtocol.DisconnectArguments
+        _args: DebugProtocol.DisconnectArguments,
     ): Promise<void> {
         try {
             await this.gdb.sendGDBExit();
@@ -1813,7 +1833,7 @@ export class GDBDebugSession extends LoggingDebugSession {
             this.sendErrorResponse(
                 response,
                 1,
-                err instanceof Error ? err.message : String(err)
+                err instanceof Error ? err.message : String(err),
             );
         }
     }
@@ -1821,7 +1841,7 @@ export class GDBDebugSession extends LoggingDebugSession {
     protected sendStoppedEvent(
         reason: string,
         threadId: number,
-        allThreadsStopped?: boolean
+        allThreadsStopped?: boolean,
     ) {
         // Reset frame handles and variables for new context
         this.frameHandles.reset();
@@ -1840,7 +1860,7 @@ export class GDBDebugSession extends LoggingDebugSession {
      */
     protected async handleLogPoint(
         message: string,
-        threadId: number
+        threadId: number,
     ): Promise<void> {
         const resolvedMessage = await resolveLogPointMessage(
             message,
@@ -1849,10 +1869,10 @@ export class GDBDebugSession extends LoggingDebugSession {
                     this.gdb,
                     expression,
                     0,
-                    threadId
+                    threadId,
                 );
                 return result.value ?? '';
-            }
+            },
         );
         this.sendEvent(new OutputEvent(resolvedMessage));
         mi.sendExecContinue(this.gdb);
@@ -1877,7 +1897,7 @@ export class GDBDebugSession extends LoggingDebugSession {
                 if (this.logPointMessages[result.bkptno]) {
                     void this.handleLogPoint(
                         this.logPointMessages[result.bkptno],
-                        getThreadId(result)
+                        getThreadId(result),
                     );
                 } else {
                     const reason =
@@ -1887,7 +1907,7 @@ export class GDBDebugSession extends LoggingDebugSession {
                     this.sendStoppedEvent(
                         reason,
                         getThreadId(result),
-                        getAllThreadsStopped(result)
+                        getAllThreadsStopped(result),
                     );
                 }
                 break;
@@ -1896,7 +1916,7 @@ export class GDBDebugSession extends LoggingDebugSession {
                 this.sendStoppedEvent(
                     'step',
                     getThreadId(result),
-                    getAllThreadsStopped(result)
+                    getAllThreadsStopped(result),
                 );
                 break;
             case 'signal-received': {
@@ -1906,7 +1926,7 @@ export class GDBDebugSession extends LoggingDebugSession {
                 this.sendStoppedEvent(
                     name,
                     getThreadId(result),
-                    getAllThreadsStopped(result)
+                    getAllThreadsStopped(result),
                 );
                 break;
             }
@@ -1914,7 +1934,7 @@ export class GDBDebugSession extends LoggingDebugSession {
                 this.sendStoppedEvent(
                     'generic',
                     getThreadId(result),
-                    getAllThreadsStopped(result)
+                    getAllThreadsStopped(result),
                 );
         }
     }
@@ -2006,8 +2026,8 @@ export class GDBDebugSession extends LoggingDebugSession {
             default:
                 logger.warn(
                     `GDB unhandled async: ${resultClass}: ${JSON.stringify(
-                        resultData
-                    )}`
+                        resultData,
+                    )}`,
                 );
         }
     }
@@ -2035,14 +2055,14 @@ export class GDBDebugSession extends LoggingDebugSession {
             default:
                 logger.warn(
                     `GDB unhandled notify: ${notifyClass}: ${JSON.stringify(
-                        notifyData
-                    )}`
+                        notifyData,
+                    )}`,
                 );
         }
     }
 
     protected async handleVariableRequestFrame(
-        ref: FrameVariableReference
+        ref: FrameVariableReference,
     ): Promise<DebugProtocol.Variable[]> {
         // initialize variables array and dereference the frame handle
         const variables: DebugProtocol.Variable[] = [];
@@ -2071,7 +2091,7 @@ export class GDBDebugSession extends LoggingDebugSession {
         const vars = this.gdb.varManager.getVars(
             frame.frameId,
             frame.threadId,
-            depth
+            depth,
         );
         if (vars) {
             for (const varobj of vars) {
@@ -2132,7 +2152,7 @@ export class GDBDebugSession extends LoggingDebugSession {
                     frame.frameId,
                     frame.threadId,
                     depth,
-                    varname
+                    varname,
                 );
             }
         }
@@ -2148,7 +2168,7 @@ export class GDBDebugSession extends LoggingDebugSession {
                     frame.frameId,
                     frame.threadId,
                     depth,
-                    variable.name
+                    variable.name,
                 );
                 if (!varobj) {
                     // create var in GDB and store it in the varMgr
@@ -2164,7 +2184,7 @@ export class GDBDebugSession extends LoggingDebugSession {
                         variable.name,
                         true,
                         false,
-                        varCreateResponse
+                        varCreateResponse,
                     );
                 } else {
                     if (pushedVars.has(varobj.varname)) {
@@ -2175,7 +2195,7 @@ export class GDBDebugSession extends LoggingDebugSession {
                         frame.frameId,
                         frame.threadId,
                         depth,
-                        varobj
+                        varobj,
                     );
                     varobj.isVar = true;
                 }
@@ -2204,7 +2224,7 @@ export class GDBDebugSession extends LoggingDebugSession {
     }
 
     protected async handleVariableRequestObject(
-        ref: ObjectVariableReference
+        ref: ObjectVariableReference,
     ): Promise<DebugProtocol.Variable[]> {
         // initialize variables array and dereference the frame handle
         const variables: DebugProtocol.Variable[] = [];
@@ -2227,7 +2247,7 @@ export class GDBDebugSession extends LoggingDebugSession {
             frame.frameId,
             frame.threadId,
             depth,
-            ref.varobjName
+            ref.varobjName,
         );
         if (varobj) {
             children = await mi.sendVarListChildren(this.gdb, {
@@ -2289,14 +2309,14 @@ export class GDBDebugSession extends LoggingDebugSession {
                     // vars by evaluating their path expression from GDB
                     const exprResponse = await mi.sendVarInfoPathExpression(
                         this.gdb,
-                        child.name
+                        child.name,
                     );
                     // create or update the var in GDB
                     let arrobj = this.gdb.varManager.getVar(
                         frame.frameId,
                         frame.threadId,
                         depth,
-                        exprResponse.path_expr
+                        exprResponse.path_expr,
                     );
                     if (!arrobj) {
                         const varCreateResponse = await mi.sendVarCreate(
@@ -2305,7 +2325,7 @@ export class GDBDebugSession extends LoggingDebugSession {
                                 expression: exprResponse.path_expr,
                                 frameId: frame.frameId,
                                 threadId: frame.threadId,
-                            }
+                            },
                         );
                         arrobj = this.gdb.varManager.addVar(
                             frame.frameId,
@@ -2314,14 +2334,14 @@ export class GDBDebugSession extends LoggingDebugSession {
                             exprResponse.path_expr,
                             true,
                             false,
-                            varCreateResponse
+                            varCreateResponse,
                         );
                     } else {
                         arrobj = await this.gdb.varManager.updateVar(
                             frame.frameId,
                             frame.threadId,
                             depth,
-                            arrobj
+                            arrobj,
                         );
                     }
                     // if we have an array parent entry, we need to display the address.
@@ -2355,7 +2375,7 @@ export class GDBDebugSession extends LoggingDebugSession {
     private registerMap = new Map<string, number>();
     private registerMapReverse = new Map<number, string>();
     protected async handleVariableRequestRegister(
-        ref: RegisterVariableReference
+        ref: RegisterVariableReference,
     ): Promise<DebugProtocol.Variable[]> {
         // initialize variables array and dereference the frame handle
         const variables: DebugProtocol.Variable[] = [];
@@ -2411,7 +2431,7 @@ export class GDBDebugSession extends LoggingDebugSession {
             this.gdb,
             `&(${varobj.expression})`,
             frame.frameId,
-            frame.threadId
+            frame.threadId,
         );
         return addr.value ? addr.value : varobj.value;
     }

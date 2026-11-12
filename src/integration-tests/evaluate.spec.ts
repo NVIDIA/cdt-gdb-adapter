@@ -36,7 +36,7 @@ describe('evaluate request', function () {
             {
                 path: evaluateSrc,
                 line: 2,
-            }
+            },
         );
         scope = await getScopes(dc);
     });
@@ -60,11 +60,11 @@ describe('evaluate request', function () {
             dc.evaluateRequest({
                 context: 'repl',
                 expression: '2 + 2',
-            })
+            }),
         );
 
         expect(err.message).eq(
-            'Evaluation of expression without frameId is not supported.'
+            'Evaluation of expression without frameId is not supported.',
         );
     });
 
@@ -74,7 +74,7 @@ describe('evaluate request', function () {
                 context: 'repl',
                 expression: '2 +',
                 frameId: scope.frame.id,
-            })
+            }),
         );
 
         expect(err.message).eq('-var-create: unable to create variable object');

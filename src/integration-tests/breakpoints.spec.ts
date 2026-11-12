@@ -33,7 +33,7 @@ describe('breakpoints', async function () {
         await dc.launchRequest(
             fillDefaults(this.currentTest, {
                 program: path.join(testProgramsDir, 'count'),
-            })
+            }),
         );
     });
 
@@ -251,7 +251,7 @@ describe('breakpoints', async function () {
         expect(bpResp2.body.breakpoints[1].line).eq(6);
         // Make sure the GDB id of the breakpoint on line 6 is unchanged
         expect(bpResp2.body.breakpoints[1].id).eq(
-            bpResp1.body.breakpoints[0].id
+            bpResp1.body.breakpoints[0].id,
         );
     });
 
@@ -291,7 +291,7 @@ describe('breakpoints', async function () {
         expect(bpResp2.body.breakpoints[1].line).eq(5);
         // Make sure the GDB id of the breakpoint on line 5 is unchanged
         expect(bpResp2.body.breakpoints[1].id).eq(
-            bpResp1.body.breakpoints[0].id
+            bpResp1.body.breakpoints[0].id,
         );
     });
 
@@ -342,7 +342,7 @@ describe('breakpoints', async function () {
         expect(bpResp2.body.breakpoints[0].line).eq(6);
         // Make sure the GDB id of the breakpoint is unchanged
         expect(bpResp2.body.breakpoints[0].id).eq(
-            bpResp1.body.breakpoints[0].id
+            bpResp1.body.breakpoints[0].id,
         );
     });
 
@@ -371,7 +371,7 @@ describe('breakpoints', async function () {
         expect(bpResp2.body.breakpoints[0].line).eq(9);
         // Make sure the GDB id of the breakpoint is unchanged
         expect(bpResp2.body.breakpoints[0].id).eq(
-            bpResp1.body.breakpoints[0].id
+            bpResp1.body.breakpoints[0].id,
         );
     });
 
@@ -395,6 +395,38 @@ describe('breakpoints', async function () {
         const vr = scope.scopes.body.scopes[0].variablesReference;
         const vars = await dc.variablesRequest({ variablesReference: vr });
         verifyVariable(vars.body.variables[0], 'count', 'int', '5');
+    });
+
+    it('condition survives without a separate -break-condition call', async () => {
+        // Regression test: the condition must be set atomically as part of
+        // -break-insert (via -c), not via a follow-up -break-condition call,
+        // since the latter is silently dropped once a pending breakpoint
+        // (e.g. a location not yet resolved) resolves against its real
+        // address. This test doesn't exercise the pending-breakpoint case
+        // directly (no CUDA kernel here), but confirms the condition is
+        // present on the breakpoint response immediately after insert.
+        const bpResp = await dc.setBreakpointsRequest({
+            source: {
+                name: 'count.c',
+                path: path.join(testProgramsDir, 'count.c'),
+            },
+            breakpoints: [
+                {
+                    column: 1,
+                    line: 4,
+                    condition: 'count == 3',
+                },
+            ],
+        });
+        expect(bpResp.body.breakpoints.length).eq(1);
+        expect(bpResp.body.breakpoints[0].verified).eq(true);
+
+        await dc.configurationDoneRequest();
+        await dc.waitForEvent('stopped');
+        const scope = await getScopes(dc);
+        const vr = scope.scopes.body.scopes[0].variablesReference;
+        const vars = await dc.variablesRequest({ variablesReference: vr });
+        verifyVariable(vars.body.variables[0], 'count', 'int', '3');
     });
 
     it('hits a hit conditional breakpoint with >', async () => {

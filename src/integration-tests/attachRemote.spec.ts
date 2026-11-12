@@ -37,7 +37,7 @@ describe('attach remote', function () {
             [':0', emptyProgram, 'running-from-spawn'],
             {
                 cwd: testProgramsDir,
-            }
+            },
         );
         port = await new Promise<number>((resolve, reject) => {
             if (gdbserver.stderr) {
