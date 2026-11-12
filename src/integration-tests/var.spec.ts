@@ -53,12 +53,12 @@ describe('Variables Test Suite', function () {
             {
                 path: varsSrc,
                 line: lineTags['STOP HERE'],
-            }
+            },
         );
         scope = await getScopes(dc);
         expect(
             scope.scopes.body.scopes.length,
-            'Unexpected number of scopes returned'
+            'Unexpected number of scopes returned',
         ).to.equal(2);
     });
 
@@ -72,7 +72,7 @@ describe('Variables Test Suite', function () {
         let vars = await dc.variablesRequest({ variablesReference: vr });
         expect(
             vars.body.variables.length,
-            'There is a different number of variables than expected'
+            'There is a different number of variables than expected',
         ).to.equal(numVars);
         verifyVariable(vars.body.variables[0], 'a', 'int', '1');
         verifyVariable(vars.body.variables[1], 'b', 'int', '2');
@@ -99,25 +99,25 @@ describe('Variables Test Suite', function () {
         vars = await dc.variablesRequest({ variablesReference: vr });
         expect(
             vars.body.variables.length,
-            'There is a different number of variables than expected'
+            'There is a different number of variables than expected',
         ).to.equal(numVars);
         verifyVariable(vars.body.variables[0], 'a', 'int', '25');
         verifyVariable(vars.body.variables[1], 'b', 'int', '10');
         // step the program and see that the values were passed to the program and evaluated.
         await dc.next(
             { threadId: scope.thread.id },
-            { path: varsSrc, line: lineTags['STOP HERE'] + 1 }
+            { path: varsSrc, line: lineTags['STOP HERE'] + 1 },
         );
         scope = await getScopes(dc);
         expect(
             scope.scopes.body.scopes.length,
-            'Unexpected number of scopes returned'
+            'Unexpected number of scopes returned',
         ).to.equal(2);
         vr = scope.scopes.body.scopes[0].variablesReference;
         vars = await dc.variablesRequest({ variablesReference: vr });
         expect(
             vars.body.variables.length,
-            'There is a different number of variables than expected'
+            'There is a different number of variables than expected',
         ).to.equal(numVars);
         verifyVariable(vars.body.variables[2], 'c', 'int', '35');
     });
@@ -131,7 +131,7 @@ describe('Variables Test Suite', function () {
 
         expect(
             vars.body.variables.length,
-            'There is a different number of variables than expected'
+            'There is a different number of variables than expected',
         ).to.be.greaterThanOrEqual(5); // 5 is a good bet to make sure that code has probably worked
         const r0 = vars.body.variables[0];
         const r1 = vars.body.variables[1];
@@ -172,14 +172,14 @@ describe('Variables Test Suite', function () {
         const vars3 = await dc.variablesRequest({ variablesReference: vr1 });
         expect(
             vars2.body.variables.length,
-            'There is a different number of registers than expected'
+            'There is a different number of registers than expected',
         ).to.equal(vars.body.variables.length);
         verifyRegister(vars2.body.variables[0], r0.name, '0x55');
         verifyRegister(vars2.body.variables[1], r1.name, '0x2d');
         verifyRegister(
             vars3.body.variables[8],
             r0.name,
-            vars1.body.variables[8].value
+            vars1.body.variables[8].value,
         );
     });
 
@@ -187,23 +187,23 @@ describe('Variables Test Suite', function () {
         // step past the initialization for the structure
         await dc.next(
             { threadId: scope.thread.id },
-            { path: varsSrc, line: lineTags['STOP HERE'] + 1 }
+            { path: varsSrc, line: lineTags['STOP HERE'] + 1 },
         );
         await dc.next(
             { threadId: scope.thread.id },
-            { path: varsSrc, line: lineTags['STOP HERE'] + 2 }
+            { path: varsSrc, line: lineTags['STOP HERE'] + 2 },
         );
         scope = await getScopes(dc);
         expect(
             scope.scopes.body.scopes.length,
-            'Unexpected number of scopes returned'
+            'Unexpected number of scopes returned',
         ).to.equal(2);
         // assert we can see the struct and its elements
         let vr = scope.scopes.body.scopes[0].variablesReference;
         let vars = await dc.variablesRequest({ variablesReference: vr });
         expect(
             vars.body.variables.length,
-            'There is a different number of variables than expected'
+            'There is a different number of variables than expected',
         ).to.equal(numVars);
         verifyVariable(vars.body.variables[3], 'r', 'struct foo', '{...}', {
             hasChildren: true,
@@ -214,7 +214,7 @@ describe('Variables Test Suite', function () {
         });
         expect(
             children.body.variables.length,
-            'There is a different number of child variables than expected'
+            'There is a different number of child variables than expected',
         ).to.equal(3);
         verifyVariable(children.body.variables[0], 'x', 'int', '1', {
             hasMemoryReference: false,
@@ -249,7 +249,7 @@ describe('Variables Test Suite', function () {
         children = await dc.variablesRequest({ variablesReference: childVR });
         expect(
             children.body.variables.length,
-            'There is a different number of child variables than expected'
+            'There is a different number of child variables than expected',
         ).to.equal(3);
         verifyVariable(children.body.variables[0], 'x', 'int', '25', {
             hasMemoryReference: false,
@@ -260,18 +260,18 @@ describe('Variables Test Suite', function () {
         // step the program and see that the values were passed to the program and evaluated.
         await dc.next(
             { threadId: scope.thread.id },
-            { path: varsSrc, line: lineTags['STOP HERE'] + 3 }
+            { path: varsSrc, line: lineTags['STOP HERE'] + 3 },
         );
         scope = await getScopes(dc);
         expect(
             scope.scopes.body.scopes.length,
-            'Unexpected number of scopes returned'
+            'Unexpected number of scopes returned',
         ).to.equal(2);
         vr = scope.scopes.body.scopes[0].variablesReference;
         vars = await dc.variablesRequest({ variablesReference: vr });
         expect(
             vars.body.variables.length,
-            'There is a different number of variables than expected'
+            'There is a different number of variables than expected',
         ).to.equal(numVars);
         verifyVariable(vars.body.variables[4], 'd', 'int', '35');
     });
@@ -280,23 +280,23 @@ describe('Variables Test Suite', function () {
         // step past the initialization for the structure
         await dc.next(
             { threadId: scope.thread.id },
-            { path: varsSrc, line: lineTags['STOP HERE'] + 1 }
+            { path: varsSrc, line: lineTags['STOP HERE'] + 1 },
         );
         await dc.next(
             { threadId: scope.thread.id },
-            { path: varsSrc, line: lineTags['STOP HERE'] + 2 }
+            { path: varsSrc, line: lineTags['STOP HERE'] + 2 },
         );
         scope = await getScopes(dc);
         expect(
             scope.scopes.body.scopes.length,
-            'Unexpected number of scopes returned'
+            'Unexpected number of scopes returned',
         ).to.equal(2);
         // assert we can see the 'foo' struct and its child 'bar' struct
         let vr = scope.scopes.body.scopes[0].variablesReference;
         let vars = await dc.variablesRequest({ variablesReference: vr });
         expect(
             vars.body.variables.length,
-            'There is a different number of variables than expected'
+            'There is a different number of variables than expected',
         ).to.equal(numVars);
         verifyVariable(vars.body.variables[3], 'r', 'struct foo', '{...}', {
             hasChildren: true,
@@ -307,7 +307,7 @@ describe('Variables Test Suite', function () {
         });
         expect(
             children.body.variables.length,
-            'There is a different number of child variables than expected'
+            'There is a different number of child variables than expected',
         ).to.equal(3);
         verifyVariable(children.body.variables[2], 'z', 'struct bar', '{...}', {
             hasChildren: true,
@@ -320,7 +320,7 @@ describe('Variables Test Suite', function () {
         });
         expect(
             subChildren.body.variables.length,
-            'There is a different number of grandchild variables than expected'
+            'There is a different number of grandchild variables than expected',
         ).to.equal(2);
         verifyVariable(subChildren.body.variables[0], 'a', 'int', '3', {
             hasMemoryReference: false,
@@ -353,7 +353,7 @@ describe('Variables Test Suite', function () {
         });
         expect(
             subChildren.body.variables.length,
-            'There is a different number of grandchild variables than expected'
+            'There is a different number of grandchild variables than expected',
         ).to.equal(2);
         verifyVariable(subChildren.body.variables[0], 'a', 'int', '25', {
             hasMemoryReference: false,
@@ -364,22 +364,22 @@ describe('Variables Test Suite', function () {
         // step the program and see that the values were passed to the program and evaluated.
         await dc.next(
             { threadId: scope.thread.id },
-            { path: varsSrc, line: lineTags['STOP HERE'] + 3 }
+            { path: varsSrc, line: lineTags['STOP HERE'] + 3 },
         );
         await dc.next(
             { threadId: scope.thread.id },
-            { path: varsSrc, line: lineTags['STOP HERE'] + 4 }
+            { path: varsSrc, line: lineTags['STOP HERE'] + 4 },
         );
         scope = await getScopes(dc);
         expect(
             scope.scopes.body.scopes.length,
-            'Unexpected number of scopes returned'
+            'Unexpected number of scopes returned',
         ).to.equal(2);
         vr = scope.scopes.body.scopes[0].variablesReference;
         vars = await dc.variablesRequest({ variablesReference: vr });
         expect(
             vars.body.variables.length,
-            'There is a different number of variables than expected'
+            'There is a different number of variables than expected',
         ).to.equal(numVars);
         verifyVariable(vars.body.variables[5], 'e', 'int', '35');
     });
@@ -398,21 +398,21 @@ describe('Variables Test Suite', function () {
         scope = await getScopes(dc);
         expect(
             scope.scopes.body.scopes.length,
-            'Unexpected number of scopes returned'
+            'Unexpected number of scopes returned',
         ).to.equal(2);
         // assert we can see the array and its elements
         let vr = scope.scopes.body.scopes[0].variablesReference;
         let vars = await dc.variablesRequest({ variablesReference: vr });
         expect(
             vars.body.variables.length,
-            'There is a different number of variables than expected'
+            'There is a different number of variables than expected',
         ).to.equal(numVars);
         verifyVariable(vars.body.variables[6], 'f', 'int [3]', undefined, {
             hasChildren: true,
         });
         expect(
             vars.body.variables[6].value,
-            'The display value of the array is not a hexadecimal address'
+            'The display value of the array is not a hexadecimal address',
         ).to.match(hexValueRegex);
         const childVR = vars.body.variables[6].variablesReference;
         let children = await dc.variablesRequest({
@@ -420,7 +420,7 @@ describe('Variables Test Suite', function () {
         });
         expect(
             children.body.variables.length,
-            'There is a different number of child variables than expected'
+            'There is a different number of child variables than expected',
         ).to.equal(3);
         verifyVariable(children.body.variables[0], '[0]', 'int', '1', {
             hasMemoryReference: false,
@@ -460,7 +460,7 @@ describe('Variables Test Suite', function () {
         children = await dc.variablesRequest({ variablesReference: childVR });
         expect(
             children.body.variables.length,
-            'There is a different number of child variables than expected'
+            'There is a different number of child variables than expected',
         ).to.equal(3);
         verifyVariable(children.body.variables[0], '[0]', 'int', '11', {
             hasMemoryReference: false,
@@ -474,18 +474,18 @@ describe('Variables Test Suite', function () {
         // step the program and see that the values were passed to the program and evaluated.
         await dc.next(
             { threadId: scope.thread.id },
-            { path: varsSrc, line: 25 }
+            { path: varsSrc, line: 25 },
         );
         scope = await getScopes(dc);
         expect(
             scope.scopes.body.scopes.length,
-            'Unexpected number of scopes returned'
+            'Unexpected number of scopes returned',
         ).to.equal(2);
         vr = scope.scopes.body.scopes[0].variablesReference;
         vars = await dc.variablesRequest({ variablesReference: vr });
         expect(
             vars.body.variables.length,
-            'There is a different number of variables than expected'
+            'There is a different number of variables than expected',
         ).to.equal(numVars);
         verifyVariable(vars.body.variables[7], 'g', 'int', '66');
     });

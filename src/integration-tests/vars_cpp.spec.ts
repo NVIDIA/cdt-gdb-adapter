@@ -46,12 +46,12 @@ describe('Variables CPP Test Suite', function () {
             {
                 path: varsCppSrc,
                 line: lineTags['STOP HERE'],
-            }
+            },
         );
         scope = await getScopes(dc);
         expect(
             scope.scopes.body.scopes.length,
-            'Unexpected number of scopes returned'
+            'Unexpected number of scopes returned',
         ).to.equal(2);
     });
 
@@ -65,7 +65,7 @@ describe('Variables CPP Test Suite', function () {
         const vars = await dc.variablesRequest({ variablesReference: vr });
         expect(
             vars.body.variables.length,
-            'There is a different number of variables than expected'
+            'There is a different number of variables than expected',
         ).to.equal(3);
         verifyVariable(vars.body.variables[0], 'fooA', 'Foo *', undefined, {
             hasChildren: true,
@@ -75,7 +75,7 @@ describe('Variables CPP Test Suite', function () {
         });
         expect(
             vars.body.variables[0].value,
-            'Value of fooA matches fooB'
+            'Value of fooA matches fooB',
         ).to.not.equal(vars.body.variables[1].value);
         // check that the children names and values are the same, but values are different
         let childrenA = await dc.variablesRequest({
@@ -86,28 +86,28 @@ describe('Variables CPP Test Suite', function () {
         });
         expect(
             childrenA.body.variables.length,
-            'There is a different number of child variables than expected'
+            'There is a different number of child variables than expected',
         ).to.equal(childrenB.body.variables.length);
         compareVariable(
             childrenA.body.variables[0],
             childrenB.body.variables[0],
             true,
             true,
-            false
+            false,
         );
         compareVariable(
             childrenA.body.variables[1],
             childrenB.body.variables[1],
             true,
             true,
-            false
+            false,
         );
         compareVariable(
             childrenA.body.variables[2],
             childrenB.body.variables[2],
             true,
             true,
-            false
+            false,
         );
         // set fooA to be equal to fooB.
         const setFooA = await dc.setVariableRequest({
@@ -120,14 +120,14 @@ describe('Variables CPP Test Suite', function () {
         const vars2 = await dc.variablesRequest({ variablesReference: vr });
         expect(
             vars2.body.variables.length,
-            'There is a different number of variables than expected'
+            'There is a different number of variables than expected',
         ).to.equal(3);
         compareVariable(
             vars2.body.variables[0],
             vars2.body.variables[1],
             false,
             true,
-            true
+            true,
         );
         // check the objects are identical
         childrenA = await dc.variablesRequest({
@@ -141,21 +141,21 @@ describe('Variables CPP Test Suite', function () {
             childrenB.body.variables[0],
             true,
             true,
-            true
+            true,
         );
         compareVariable(
             childrenA.body.variables[1],
             childrenB.body.variables[1],
             true,
             true,
-            true
+            true,
         );
         compareVariable(
             childrenA.body.variables[2],
             childrenB.body.variables[2],
             true,
             true,
-            true
+            true,
         );
     });
 
@@ -165,14 +165,14 @@ describe('Variables CPP Test Suite', function () {
         const vars = await dc.variablesRequest({ variablesReference: vr });
         expect(
             vars.body.variables.length,
-            'There is a different number of variables than expected'
+            'There is a different number of variables than expected',
         ).to.equal(3);
         verifyVariable(vars.body.variables[0], 'fooA', 'Foo *', undefined, {
             hasChildren: true,
         });
         expect(
             vars.body.variables[0].variablesReference,
-            `${vars.body.variables[0].name} has no children`
+            `${vars.body.variables[0].name} has no children`,
         ).to.not.equal(0);
         const childVR = vars.body.variables[0].variablesReference;
         let children = await dc.variablesRequest({
@@ -180,7 +180,7 @@ describe('Variables CPP Test Suite', function () {
         });
         expect(
             children.body.variables.length,
-            'There is a different number of child variables than expected'
+            'There is a different number of child variables than expected',
         ).to.equal(3);
         verifyVariable(children.body.variables[0], 'a', 'int', '1', {
             hasMemoryReference: false,
@@ -204,7 +204,7 @@ describe('Variables CPP Test Suite', function () {
         });
         expect(
             children.body.variables.length,
-            'There is a different number of child variables than expected'
+            'There is a different number of child variables than expected',
         ).to.equal(3);
         verifyVariable(children.body.variables[0], 'a', 'int', '55', {
             hasMemoryReference: false,

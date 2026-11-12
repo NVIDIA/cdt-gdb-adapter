@@ -41,11 +41,11 @@ if (process.platform !== 'win32') {
 
                 master.reader.on(
                     'data',
-                    (data) => (masterBuffer += data.toString('utf8'))
+                    (data) => (masterBuffer += data.toString('utf8')),
                 );
                 slave.reader.on(
                     'data',
-                    (data) => (slaveBuffer += data.toString('utf8'))
+                    (data) => (slaveBuffer += data.toString('utf8')),
                 );
 
                 await sendAndAwait('master2slave', master.writer, slave.reader);
@@ -57,7 +57,7 @@ if (process.platform !== 'win32') {
 
                 expect(masterBuffer).eq('slave2master');
                 expect(slaveBuffer).eq('master2slave');
-            })
+            }),
         );
     });
 }
@@ -72,7 +72,7 @@ if (process.platform !== 'win32') {
 function sendAndAwait(
     str: string,
     writeTo: Writable,
-    readFrom: Readable
+    readFrom: Readable,
 ): Promise<void> {
     return new Promise<void>((resolve) => {
         readFrom.once('data', () => resolve());
@@ -84,7 +84,7 @@ function sendAndAwait(
  * Allows an async function to reject early.
  */
 function failFast<T>(
-    callback: (this: T, fail: (error: Error) => void) => Promise<void>
+    callback: (this: T, fail: (error: Error) => void) => Promise<void>,
 ): (this: T) => Promise<void> {
     let fail!: (error: Error) => void;
     const abortPromise = new Promise<never>((_, reject) => {

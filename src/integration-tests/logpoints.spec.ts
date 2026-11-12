@@ -23,7 +23,7 @@ describe('logpoint message resolution', () => {
             'plain log line',
             async () => {
                 throw new Error('should not evaluate');
-            }
+            },
         );
 
         expect(result).to.eq('plain log line');
@@ -41,7 +41,7 @@ describe('logpoint message resolution', () => {
 
         const result = await resolveLogPointMessage(
             'block(bx={blockIdx.x}) thread(ty={threadIdx.y}) aBegin={wA * BLOCK_SIZE * blockIdx.y}',
-            evaluate
+            evaluate,
         );
 
         expect(result).to.eq('block(bx=0) thread(ty=3) aBegin=10240');
@@ -57,11 +57,11 @@ describe('logpoint message resolution', () => {
 
         const result = await resolveLogPointMessage(
             'count={count} typo={cout}',
-            evaluate
+            evaluate,
         );
 
         expect(result).to.eq(
-            'count=7 typo=<error: No symbol "cout" in current context.>'
+            'count=7 typo=<error: No symbol "cout" in current context.>',
         );
     });
 
@@ -73,7 +73,7 @@ describe('logpoint message resolution', () => {
 
         const result = await resolveLogPointMessage(
             'size={sizeof((int[]){1,2,3})}',
-            evaluate
+            evaluate,
         );
 
         expect(result).to.eq('size=12');
@@ -85,7 +85,7 @@ describe('logpoint message resolution', () => {
             async (expression) => {
                 expect(expression).to.eq('count');
                 return '5';
-            }
+            },
         );
 
         expect(result).to.eq('open brace { then 5');
@@ -101,7 +101,7 @@ describe('logpoint message resolution', () => {
 
     it('formats evaluation errors consistently', () => {
         expect(formatLogPointEvaluationError(new Error('bad expr'))).to.eq(
-            '<error: bad expr>'
+            '<error: bad expr>',
         );
         expect(formatLogPointEvaluationError('oops')).to.eq('<error: oops>');
     });
@@ -116,7 +116,7 @@ describe('logpoints', async () => {
         await dc.launchRequest(
             fillDefaults(this.currentTest, {
                 program: join(testProgramsDir, 'count'),
-            })
+            }),
         );
     });
 

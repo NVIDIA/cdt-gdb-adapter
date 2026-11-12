@@ -31,30 +31,32 @@ describe('util', async () => {
     });
     it('parseGdbOutput', async () => {
         expect(parseGdbVersionOutput('GNU gdb 6.8.50.20080730')).to.eq(
-            '6.8.50.20080730'
+            '6.8.50.20080730',
         );
         expect(
-            parseGdbVersionOutput('GNU gdb (GDB) 6.8.50.20080730-cvs')
+            parseGdbVersionOutput('GNU gdb (GDB) 6.8.50.20080730-cvs'),
         ).to.eq('6.8.50.20080730');
         expect(
             parseGdbVersionOutput(
-                'GNU gdb (Ericsson GDB 1.0-10) 6.8.50.20080730-cvs'
-            )
+                'GNU gdb (Ericsson GDB 1.0-10) 6.8.50.20080730-cvs',
+            ),
         ).to.eq('6.8.50.20080730');
         expect(
-            parseGdbVersionOutput('GNU gdb (GDB) Fedora (7.0-3.fc12)')
+            parseGdbVersionOutput('GNU gdb (GDB) Fedora (7.0-3.fc12)'),
         ).to.eq('7.0');
         expect(parseGdbVersionOutput('GNU gdb 7.0')).to.eq('7.0');
         expect(parseGdbVersionOutput('GNU gdb Fedora (6.8-27.el5)')).to.eq(
-            '6.8'
+            '6.8',
         );
         expect(
-            parseGdbVersionOutput('GNU gdb Red Hat Linux (6.3.0.0-1.162.el4rh)')
+            parseGdbVersionOutput(
+                'GNU gdb Red Hat Linux (6.3.0.0-1.162.el4rh)',
+            ),
         ).to.eq('6.3.0.0');
         expect(
             parseGdbVersionOutput(
-                'GNU gdb (GDB) STMicroelectronics/Linux Base 7.4-71 [build Mar  1 2013]'
-            )
+                'GNU gdb (GDB) STMicroelectronics/Linux Base 7.4-71 [build Mar  1 2013]',
+            ),
         ).to.eq('7.4');
     });
 });

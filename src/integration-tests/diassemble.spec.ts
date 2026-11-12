@@ -30,7 +30,7 @@ describe('Disassembly Test Suite', function () {
             {
                 path: disSrc,
                 line: 2,
-            }
+            },
         );
         const threads = await dc.threadsRequest();
         // On windows additional threads can exist to handle signals, therefore find

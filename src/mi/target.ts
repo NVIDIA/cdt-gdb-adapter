@@ -14,7 +14,7 @@ export function sendTargetAttachRequest(
     gdb: GDBBackend,
     params: {
         pid: string;
-    }
+    },
 ): Promise<MIResponse> {
     return gdb.sendCommand(`-target-attach ${params.pid}`);
 }
@@ -24,9 +24,9 @@ export function sendTargetSelectRequest(
     params: {
         type: string;
         parameters: string[];
-    }
+    },
 ): Promise<MIResponse> {
     return gdb.sendCommand(
-        `-target-select ${params.type} ${params.parameters.join(' ')}`
+        `-target-select ${params.type} ${params.parameters.join(' ')}`,
     );
 }

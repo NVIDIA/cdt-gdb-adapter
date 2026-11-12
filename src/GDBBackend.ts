@@ -35,22 +35,22 @@ export interface MIGDBShowResponse extends MIResponse {
 export declare interface GDBBackend {
     on(
         event: 'consoleStreamOutput',
-        listener: (output: string, category: string) => void
+        listener: (output: string, category: string) => void,
     ): this;
     on(
         event: 'execAsync' | 'notifyAsync' | 'statusAsync',
-        listener: (asyncClass: string, data: any) => void
+        listener: (asyncClass: string, data: any) => void,
     ): this;
 
     emit(
         event: 'consoleStreamOutput',
         output: string,
-        category: string
+        category: string,
     ): boolean;
     emit(
         event: 'execAsync' | 'notifyAsync' | 'statusAsync',
         asyncClass: string,
-        data: any
+        data: any,
     ): boolean;
 }
 
@@ -61,16 +61,105 @@ export class GDBBackend extends events.EventEmitter {
     protected token = 0;
     protected proc?: ChildProcess;
     private gdbVersion?: string;
+    private spawnCommandLine?: { path: string; args: string[] };
     protected gdbAsync = false;
     protected gdbNonStop = false;
     protected hardwareBreakpoint = false;
+
+    // Buffers console warnings of the form:
+    //   "warning: Error in testing condition for breakpoint N:"
+    //   "<parse error detail on the following console line>"
+    // so any GDB session subclass — regardless of how it wires up
+    // consoleStreamOutput — can surface a UI-level warning when a
+    // breakpoint condition fails to parse and GDB falls back to an
+    // unconditional breakpoint. Centralized here (rather than in each
+    // session subclass's own listener) because consoleStreamOutput is
+    // emitted from multiple sources (stdout via MIParser, stderr
+    // directly in spawn()) that different session subclasses wire up
+    // independently — see GDBDebugSession.attachOrLaunchRequest vs.
+    // GDBTargetDebugSession.setupCommonLoggerAndHandlers.
+    private pendingConditionWarnings = new Map<string, string>();
+    private awaitingConditionWarningDetail:
+        | { bpNum: string; category: string }
+        | undefined;
 
     get varManager(): VarManager {
         return this.varMgr;
     }
 
+    public emit(
+        event: 'consoleStreamOutput',
+        output: string,
+        category: string,
+    ): boolean;
+    public emit(
+        event: 'execAsync' | 'notifyAsync' | 'statusAsync',
+        asyncClass: string,
+        data: any,
+    ): boolean;
+    public emit(event: string | symbol, ...args: any[]): boolean {
+        if (event === 'consoleStreamOutput') {
+            this.processConsoleStreamOutput(
+                args[0] as string,
+                args[1] as string,
+            );
+        }
+        return super.emit(event, ...args);
+    }
+
+    private processConsoleStreamOutput(output: string, category: string): void {
+        const condWarningMatch = output.match(
+            /^warning: Error in testing condition for breakpoint (\d+):/,
+        );
+        if (condWarningMatch) {
+            const bpNum = condWarningMatch[1];
+            this.awaitingConditionWarningDetail = { bpNum, category };
+            this.pendingConditionWarnings.set(bpNum, output);
+        } else if (this.awaitingConditionWarningDetail) {
+            // Only treat this as the continuation line if it arrived on the
+            // same stream/category as the warning itself — consoleStreamOutput
+            // carries stdout, stderr, and log output interleaved, so a line
+            // from a different category landing here is unrelated output
+            // that happened to arrive between the two warning lines, not
+            // the detail we're waiting for. Keep waiting rather than giving
+            // up, so the detail isn't lost if unrelated output from another
+            // category interleaves before the real continuation line arrives.
+            // A fresh warning header (handled in the branch above) still
+            // resets this state regardless of category, so we never wait
+            // indefinitely on a stale warning.
+            if (category !== this.awaitingConditionWarningDetail.category) {
+                return;
+            }
+            const { bpNum } = this.awaitingConditionWarningDetail;
+            const existing = this.pendingConditionWarnings.get(bpNum) ?? '';
+            this.pendingConditionWarnings.set(
+                bpNum,
+                `${existing} ${output}`.trim(),
+            );
+            this.awaitingConditionWarningDetail = undefined;
+        }
+    }
+
+    /**
+     * Returns and clears the buffered invalid-condition warning for the
+     * given breakpoint number, if one is pending. Used by session
+     * subclasses to surface a UI-level warning (e.g. a toast) the first
+     * time a breakpoint with a condition that failed to parse is hit.
+     */
+    public consumePendingConditionWarning(bpNum: string): string | undefined {
+        const warning = this.pendingConditionWarnings.get(bpNum);
+        if (warning !== undefined) {
+            this.pendingConditionWarnings.delete(bpNum);
+        }
+        return warning;
+    }
+
+    get commandLine(): { path: string; args: string[] } | undefined {
+        return this.spawnCommandLine;
+    }
+
     public async spawn(
-        requestArgs: LaunchRequestArguments | AttachRequestArguments
+        requestArgs: LaunchRequestArguments | AttachRequestArguments,
     ) {
         const gdbPath = requestArgs.gdb || 'gdb';
         this.gdbVersion = await getGdbVersion(gdbPath);
@@ -78,6 +167,7 @@ export class GDBBackend extends events.EventEmitter {
         if (requestArgs.gdbArguments) {
             args = args.concat(requestArgs.gdbArguments);
         }
+        this.spawnCommandLine = { path: gdbPath, args };
         this.proc = spawn(gdbPath, args);
         if (this.proc.stdin == null || this.proc.stdout == null) {
             throw new Error('Spawned GDB does not have stdout or stdin');
@@ -97,7 +187,7 @@ export class GDBBackend extends events.EventEmitter {
 
     public async spawnInClientTerminal(
         requestArgs: LaunchRequestArguments | AttachRequestArguments,
-        cb: (args: string[]) => Promise<void>
+        cb: (args: string[]) => Promise<void>,
     ) {
         const gdbPath = requestArgs.gdb || 'gdb';
         this.gdbVersion = await getGdbVersion(gdbPath);
@@ -109,6 +199,7 @@ export class GDBBackend extends events.EventEmitter {
         if (requestArgs.gdbArguments) {
             args = args.concat(requestArgs.gdbArguments);
         }
+        this.spawnCommandLine = { path: gdbPath, args: args.slice(1) };
         await cb(args);
         this.out = pty.writer;
         await this.parser.parse(pty.reader);
@@ -201,7 +292,7 @@ export class GDBBackend extends events.EventEmitter {
      * If ignoreFailures is false (or implied for a string command), errors will stop execution and be re-thrown.
      */
     public async sendCommands(
-        commands?: Array<string | { text: string; ignoreFailures: boolean }>
+        commands?: Array<string | { text: string; ignoreFailures: boolean }>,
     ): Promise<void> {
         if (commands) {
             for (const commandItem of commands) {
@@ -226,7 +317,7 @@ export class GDBBackend extends events.EventEmitter {
                                 ? error.message
                                 : String(error);
                         logger.warn(
-                            `Setup command "${commandText}" failed but failures are ignored: ${errorMessage}`
+                            `Setup command "${commandText}" failed but failures are ignored: ${errorMessage}`,
                         );
                     } else {
                         // Re-throw the error to stop execution for commands where failures are NOT ignored
@@ -257,9 +348,9 @@ export class GDBBackend extends events.EventEmitter {
                             reject(
                                 new Error(
                                     `Unknown response ${resultClass}: ${JSON.stringify(
-                                        resultData
-                                    )}`
-                                )
+                                        resultData,
+                                    )}`,
+                                ),
                             );
                     }
                 });
@@ -294,25 +385,25 @@ export class GDBBackend extends events.EventEmitter {
 
     public sendFileExecAndSymbols(program: string) {
         return this.sendCommand(
-            `-file-exec-and-symbols ${this.standardEscape(program)}`
+            `-file-exec-and-symbols ${this.standardEscape(program)}`,
         );
     }
 
     public sendFileSymbolFile(symbols: string) {
         return this.sendCommand(
-            `-file-symbol-file ${this.standardEscape(symbols)}`
+            `-file-symbol-file ${this.standardEscape(symbols)}`,
         );
     }
 
     public sendAddSymbolFile(symbols: string, offset: string) {
         return this.sendCommand(
-            `add-symbol-file ${this.standardEscape(symbols)} ${offset}`
+            `add-symbol-file ${this.standardEscape(symbols)} ${offset}`,
         );
     }
 
     public sendLoad(imageFileName: string, imageOffset: string | undefined) {
         return this.sendCommand(
-            `load ${this.standardEscape(imageFileName)} ${imageOffset || ''}`
+            `load ${this.standardEscape(imageFileName)} ${imageOffset || ''}`,
         );
     }
 

@@ -79,7 +79,7 @@ export function sendVarCreate(
         expression: string;
         threadId?: number;
         frameId?: number;
-    }
+    },
 ): Promise<MIVarCreateResponse> {
     let command = '-var-create';
     if (params.threadId !== undefined) {
@@ -120,7 +120,7 @@ export function sendVarListChildren(
         name: string;
         from?: number;
         to?: number;
-    }
+    },
 ): Promise<MIVarListChildrenResponse> {
     let command = '-var-list-children';
     if (params.printValues) {
@@ -142,7 +142,7 @@ export function sendVarUpdate(
             | MIVarPrintValues.no
             | MIVarPrintValues.all
             | MIVarPrintValues.simple;
-    }
+    },
 ): Promise<MIVarUpdateResponse> {
     let command = '-var-update';
     if (params.printValues) {
@@ -162,7 +162,7 @@ export function sendVarDelete(
     gdb: GDBBackend,
     params: {
         varname: string;
-    }
+    },
 ): Promise<void> {
     const command = `-var-delete ${params.varname}`;
     return gdb.sendCommand(command);
@@ -173,7 +173,7 @@ export function sendVarAssign(
     params: {
         varname: string;
         expression: string;
-    }
+    },
 ): Promise<MIVarAssignResponse> {
     const command = `-var-assign ${params.varname} ${params.expression}`;
     return gdb.sendCommand(command);
@@ -183,7 +183,7 @@ export function sendVarEvaluateExpression(
     gdb: GDBBackend,
     params: {
         varname: string;
-    }
+    },
 ): Promise<MIVarEvalResponse> {
     const command = `-var-evaluate-expression ${params.varname}`;
     return gdb.sendCommand(command);
@@ -191,7 +191,7 @@ export function sendVarEvaluateExpression(
 
 export function sendVarInfoPathExpression(
     gdb: GDBBackend,
-    name: string
+    name: string,
 ): Promise<MIVarPathInfoResponse> {
     const command = `-var-info-path-expression ${name}`;
     return gdb.sendCommand(command);
@@ -199,7 +199,7 @@ export function sendVarInfoPathExpression(
 
 export function sendVarSetFormatToHex(
     gdb: GDBBackend,
-    name: string
+    name: string,
 ): Promise<void> {
     const command = `-var-set-format ${name} hexadecimal`;
     return gdb.sendCommand(command);

@@ -40,7 +40,7 @@ export class File {
                         } else {
                             this.push(buffer.slice(0, bytesRead));
                         }
-                    }
+                    },
                 );
             },
             write(chunk, encoding, callback) {

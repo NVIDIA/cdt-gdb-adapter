@@ -44,7 +44,7 @@ export class MIParser {
 
     public queueCommand(
         token: number,
-        command: (resultClass: string, resultData: any) => void
+        command: (resultClass: string, resultData: any) => void,
     ) {
         this.commandQueue[token] = command;
     }
@@ -262,7 +262,7 @@ export class MIParser {
                 for (let i = 0; i < rest.length; i += 1000) {
                     const msg = i === 0 ? 'result' : '-cont-';
                     logger.verbose(
-                        `GDB ${msg}: ${token} ${rest.substr(i, 1000)}`
+                        `GDB ${msg}: ${token} ${rest.substr(i, 1000)}`,
                     );
                 }
                 const command = this.commandQueue[token];
@@ -289,7 +289,7 @@ export class MIParser {
                 this.gdb.emit(
                     'notifyAsync',
                     notifyClass,
-                    this.handleAsyncData()
+                    this.handleAsyncData(),
                 );
                 break;
             }
@@ -305,7 +305,7 @@ export class MIParser {
                 this.gdb.emit(
                     'statusAsync',
                     statusClass,
-                    this.handleAsyncData()
+                    this.handleAsyncData(),
                 );
                 break;
             }
@@ -321,7 +321,7 @@ export class MIParser {
                 this.gdb.emit(
                     'consoleStreamOutput',
                     this.restOfLine() + '\n',
-                    'stdout'
+                    'stdout',
                 );
         }
     }

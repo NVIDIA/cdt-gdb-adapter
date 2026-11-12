@@ -66,7 +66,7 @@ const parseLogPointMessage = (message: string): LogPointSegment[] => {
 
 export async function resolveLogPointMessage(
     message: string,
-    evaluate: (expression: string) => Promise<string>
+    evaluate: (expression: string) => Promise<string>,
 ): Promise<string> {
     const segments = parseLogPointMessage(message);
     const resolved = await Promise.all(
@@ -79,7 +79,7 @@ export async function resolveLogPointMessage(
             } catch (error) {
                 return formatLogPointEvaluationError(error);
             }
-        })
+        }),
     );
     return resolved.join('');
 }

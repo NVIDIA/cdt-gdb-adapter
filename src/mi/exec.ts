@@ -14,7 +14,7 @@ export function sendExecArguments(
     gdb: GDBBackend,
     params: {
         arguments: string;
-    }
+    },
 ): Promise<MIResponse> {
     return gdb.sendCommand(`-exec-arguments ${params.arguments}`);
 }
@@ -31,8 +31,24 @@ export function sendExecContinue(gdb: GDBBackend, threadId?: number) {
     return gdb.sendCommand(command);
 }
 
+export function sendExecNextInstruction(gdb: GDBBackend, threadId?: number) {
+    let command = '-exec-next-instruction';
+    if (threadId !== undefined) {
+        command += ` --thread ${threadId}`;
+    }
+    return gdb.sendCommand(command);
+}
+
 export function sendExecNext(gdb: GDBBackend, threadId?: number) {
     let command = '-exec-next';
+    if (threadId !== undefined) {
+        command += ` --thread ${threadId}`;
+    }
+    return gdb.sendCommand(command);
+}
+
+export function sendExecStepInstruction(gdb: GDBBackend, threadId?: number) {
+    let command = '-exec-step-instruction';
     if (threadId !== undefined) {
         command += ` --thread ${threadId}`;
     }

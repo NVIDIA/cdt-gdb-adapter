@@ -49,7 +49,7 @@ export interface MIBreakListResponse extends MIResponse {
 }
 
 function cleanupBreakpointResponse(
-    raw: MIBreakInsertResponseInternal
+    raw: MIBreakInsertResponseInternal,
 ): MIBreakInsertResponse {
     if (Array.isArray(raw.bkpt)) {
         const bkpt = raw.bkpt[0];
@@ -70,7 +70,7 @@ export function breakpointLocation(
     gdb: GDBBackend,
     source: string,
     line = '',
-    forInsert = false
+    forInsert = false,
 ): string {
     const version8 = gdb.gdbVersionAtLeast('8.0');
     if (forInsert) {
@@ -91,7 +91,7 @@ export function breakpointLocation(
 export function breakpointFunctionLocation(
     gdb: GDBBackend,
     fn: string,
-    forInsert = false
+    forInsert = false,
 ): string {
     const version8 = gdb.gdbVersionAtLeast('8.0');
     if (forInsert) {
@@ -115,30 +115,38 @@ export async function sendBreakInsert(
         threadId?: string;
         source: string;
         line: number;
-    }
+    },
 ): Promise<MIBreakInsertResponse> {
     // Todo: lots of options
     const temp = request.temporary ? '-t ' : '';
     const ignore = request.ignoreCount ? `-i ${request.ignoreCount} ` : '';
     const hwBreakpoint = request.hardware ? '-h ' : '';
     const pend = request.pending ? '-f ' : '';
+    // Build the condition inline (rather than issuing a separate
+    // -break-condition call afterward) so it is part of the SAME
+    // -break-insert call that creates the breakpoint. When a breakpoint
+    // is pending (e.g. a CUDA kernel line before the kernel is
+    // JIT-compiled), setting the condition via a follow-up
+    // -break-condition call is silently dropped once the breakpoint
+    // resolves against the JIT-compiled location — the breakpoint ends
+    // up disabled with no error shown. The atomic form preserves the
+    // condition correctly through pending-breakpoint resolution.
+    const forceConditionArg = request.forceCondition
+        ? '--force-condition '
+        : '';
+    const condition = request.condition
+        ? `-c ${gdb.standardEscape(request.condition)} `
+        : '';
     const location = await breakpointLocation(
         gdb,
         request.source,
         request.line.toString(),
-        true
+        true,
     );
-    const command = `-break-insert ${temp}${hwBreakpoint}${ignore}${pend}${location}`;
-    const result = await gdb.sendCommand<MIBreakInsertResponseInternal>(
-        command
-    );
+    const command = `-break-insert ${temp}${hwBreakpoint}${ignore}${pend}${forceConditionArg}${condition}${location}`;
+    const result =
+        await gdb.sendCommand<MIBreakInsertResponseInternal>(command);
     const clean = cleanupBreakpointResponse(result);
-    if (request.condition) {
-        const forceConditionArg = request.forceCondition ? '--force ' : '';
-        await gdb.sendCommand(
-            `-break-condition ${forceConditionArg}${clean.bkpt.number} ${request.condition}`
-        );
-    }
 
     return clean;
 }
@@ -147,7 +155,7 @@ export function sendBreakDelete(
     gdb: GDBBackend,
     request: {
         breakpoints: string[];
-    }
+    },
 ): Promise<MIBreakDeleteResponse> {
     return gdb.sendCommand(`-break-delete ${request.breakpoints.join(' ')}`);
 }
@@ -163,16 +171,15 @@ export async function sendBreakFunctionInsert(
         temporary?: boolean;
         hardware?: boolean;
         pending?: boolean;
-    }
+    },
 ): Promise<MIBreakInsertResponse> {
     const temp = request?.temporary ? '-t ' : '';
     const hwBreakpoint = request?.hardware ? '-h ' : '';
     const pend = request?.pending ? '-f ' : '';
     const location = await breakpointFunctionLocation(gdb, fn, true);
     const command = `-break-insert ${temp}${hwBreakpoint}${pend}${location}`;
-    const result = await gdb.sendCommand<MIBreakInsertResponseInternal>(
-        command
-    );
+    const result =
+        await gdb.sendCommand<MIBreakInsertResponseInternal>(command);
     const clean = cleanupBreakpointResponse(result);
     return clean;
 }

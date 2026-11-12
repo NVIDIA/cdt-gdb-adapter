@@ -30,7 +30,7 @@ describe('config', function () {
     async function verifyLaunchWorks(
         test: Mocha.Context,
         commandLine: string[],
-        requestArgs: LaunchRequestArguments
+        requestArgs: LaunchRequestArguments,
     ) {
         if (debugServerPort) {
             // This test requires launching the adapter to work
@@ -54,7 +54,7 @@ describe('config', function () {
         await verifyLaunchWorks(
             this,
             [`--config=${JSON.stringify(config)}`],
-            {} as LaunchRequestArguments
+            {} as LaunchRequestArguments,
         );
     });
 
@@ -70,7 +70,7 @@ describe('config', function () {
         await verifyLaunchWorks(
             this,
             [`--config-frozen=${JSON.stringify(config)}`],
-            {} as LaunchRequestArguments
+            {} as LaunchRequestArguments,
         );
     });
 
@@ -81,7 +81,7 @@ describe('config', function () {
             [`--config-frozen=${JSON.stringify(config)}`],
             {
                 program: '/program/that/does/not/exist',
-            } as LaunchRequestArguments
+            } as LaunchRequestArguments,
         );
     });
 
@@ -95,7 +95,7 @@ describe('config', function () {
         await verifyLaunchWorks(
             this,
             [`--config=@${jsonFile.name}`],
-            {} as LaunchRequestArguments
+            {} as LaunchRequestArguments,
         );
     });
 
@@ -109,7 +109,7 @@ describe('config', function () {
         await verifyLaunchWorks(
             this,
             [`--config-frozen=@${jsonFile.name}`],
-            {} as LaunchRequestArguments
+            {} as LaunchRequestArguments,
         );
     });
 
@@ -137,7 +137,7 @@ describe('config', function () {
                 // Do an attach request omitting the program that we want
                 // the adapter to force into a launch request
                 dc.attachRequest(
-                    fillDefaults(this.test, {} as AttachRequestArguments)
+                    fillDefaults(this.test, {} as AttachRequestArguments),
                 ),
 
                 // The rest of this code is to ensure we launcher properly by verifying

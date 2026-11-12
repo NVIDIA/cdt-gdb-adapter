@@ -49,7 +49,7 @@ export class ForkedFile {
             [...process.execArgv, __filename, path],
             {
                 stdio: ['pipe', 'pipe', 'inherit'],
-            }
+            },
         );
     }
 

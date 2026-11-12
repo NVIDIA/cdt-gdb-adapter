@@ -68,7 +68,8 @@ export interface TargetAttachRequestArguments extends RequestArguments {
     preRunCommands?: string[];
 }
 
-export interface QNXTargetAttachRequestArguments extends TargetAttachRequestArguments {
+export interface QNXTargetAttachRequestArguments
+    extends TargetAttachRequestArguments {
     // path to upload the executable to on the QNX system
     executableUploadPath?: string;
 }
@@ -88,7 +89,7 @@ export class GDBTargetDebugSession extends GDBDebugSession {
     protected async attachOrLaunchRequest(
         response: DebugProtocol.Response,
         request: 'launch' | 'attach',
-        args: TargetLaunchRequestArguments | TargetAttachRequestArguments
+        args: TargetLaunchRequestArguments | TargetAttachRequestArguments,
     ) {
         this.setupCommonLoggerAndHandlers(args);
 
@@ -101,7 +102,7 @@ export class GDBTargetDebugSession extends GDBDebugSession {
                 this.sendErrorResponse(
                     response,
                     1,
-                    'The program must be specified in the launch request arguments'
+                    'The program must be specified in the launch request arguments',
                 );
                 return;
             }
@@ -113,38 +114,38 @@ export class GDBTargetDebugSession extends GDBDebugSession {
 
     protected async launchRequest(
         response: DebugProtocol.LaunchResponse,
-        args: TargetLaunchRequestArguments
+        args: TargetLaunchRequestArguments,
     ): Promise<void> {
         try {
             const [request, resolvedArgs] = this.applyRequestArguments(
                 'launch',
-                args
+                args,
             );
             await this.attachOrLaunchRequest(response, request, resolvedArgs);
         } catch (err) {
             this.sendErrorResponse(
                 response,
                 1,
-                err instanceof Error ? err.message : String(err)
+                err instanceof Error ? err.message : String(err),
             );
         }
     }
 
     protected async attachRequest(
         response: DebugProtocol.AttachResponse,
-        args: TargetAttachRequestArguments
+        args: TargetAttachRequestArguments,
     ): Promise<void> {
         try {
             const [request, resolvedArgs] = this.applyRequestArguments(
                 'attach',
-                args
+                args,
             );
             await this.attachOrLaunchRequest(response, request, resolvedArgs);
         } catch (err) {
             this.sendErrorResponse(
                 response,
                 1,
-                err instanceof Error ? err.message : String(err)
+                err instanceof Error ? err.message : String(err),
             );
         }
     }
@@ -152,7 +153,7 @@ export class GDBTargetDebugSession extends GDBDebugSession {
     protected setupCommonLoggerAndHandlers(args: TargetLaunchRequestArguments) {
         logger.setup(
             args.verbose ? Logger.LogLevel.Verbose : Logger.LogLevel.Warn,
-            args.logFile || false
+            args.logFile || false,
         );
 
         this.gdb.on('consoleStreamOutput', (output, category) => {
@@ -160,15 +161,15 @@ export class GDBTargetDebugSession extends GDBDebugSession {
         });
 
         this.gdb.on('execAsync', (resultClass, resultData) =>
-            this.handleGDBAsync(resultClass, resultData)
+            this.handleGDBAsync(resultClass, resultData),
         );
         this.gdb.on('notifyAsync', (resultClass, resultData) =>
-            this.handleGDBNotify(resultClass, resultData)
+            this.handleGDBNotify(resultClass, resultData),
         );
     }
 
     protected async startGDBServer(
-        args: TargetLaunchRequestArguments
+        args: TargetLaunchRequestArguments,
     ): Promise<void> {
         if (args.target === undefined) {
             args.target = {};
@@ -200,14 +201,14 @@ export class GDBTargetDebugSession extends GDBDebugSession {
                     },
                     target.serverStartupDelay !== undefined
                         ? target.serverStartupDelay
-                        : 0
+                        : 0,
                 );
             } else {
                 checkTargetPort = (data: any) => {
                     const regex = new RegExp(
                         target.serverPortRegExp
                             ? target.serverPortRegExp
-                            : 'Listening on port ([0-9]+)'
+                            : 'Listening on port ([0-9]+)',
                     );
                     const m = regex.exec(data);
                     if (m !== null) {
@@ -219,7 +220,7 @@ export class GDBTargetDebugSession extends GDBDebugSession {
                             },
                             target.serverStartupDelay !== undefined
                                 ? target.serverStartupDelay
-                                : 0
+                                : 0,
                         );
                     }
                 };
@@ -272,7 +273,7 @@ export class GDBTargetDebugSession extends GDBDebugSession {
     protected async startGDBAndAttachToTarget(
         response: DebugProtocol.AttachResponse | DebugProtocol.LaunchResponse,
         args: TargetAttachRequestArguments | QNXTargetAttachRequestArguments,
-        isQNX = false
+        isQNX = false,
     ): Promise<void> {
         if (args.target === undefined) {
             args.target = {};
@@ -288,10 +289,15 @@ export class GDBTargetDebugSession extends GDBDebugSession {
 
             if (isQNX) {
                 await this.gdb.sendCommand(
-                    `target qnx ${target.host}:${target.port}`
+                    `target qnx ${target.host}:${target.port}`,
                 );
-                if ('executableUploadPath' in args && args.executableUploadPath) {
-                    await this.gdb.sendCommand(`upload ${args.program} ${args.executableUploadPath}`);
+                if (
+                    'executableUploadPath' in args &&
+                    args.executableUploadPath
+                ) {
+                    await this.gdb.sendCommand(
+                        `upload ${args.program} ${args.executableUploadPath}`,
+                    );
                 } else {
                     await this.gdb.sendCommand(`upload ${args.program}`);
                 }
@@ -304,11 +310,11 @@ export class GDBTargetDebugSession extends GDBDebugSession {
                     if (args.imageAndSymbols.symbolOffset) {
                         await this.gdb.sendAddSymbolFile(
                             args.imageAndSymbols.symbolFileName,
-                            args.imageAndSymbols.symbolOffset
+                            args.imageAndSymbols.symbolOffset,
                         );
                     } else {
                         await this.gdb.sendFileSymbolFile(
-                            args.imageAndSymbols.symbolFileName
+                            args.imageAndSymbols.symbolFileName,
                         );
                     }
                 }
@@ -342,16 +348,16 @@ export class GDBTargetDebugSession extends GDBDebugSession {
                 this.sendEvent(
                     new OutputEvent(
                         `connected to ${targetType} target ${targetParameters.join(
-                            ' '
-                        )}`
-                    )
+                            ' ',
+                        )}`,
+                    ),
                 );
             } else {
                 await this.gdb.sendCommands(target.connectCommands);
                 this.sendEvent(
                     new OutputEvent(
-                        'connected to target using provided connectCommands'
-                    )
+                        'connected to target using provided connectCommands',
+                    ),
                 );
             }
 
@@ -361,7 +367,7 @@ export class GDBTargetDebugSession extends GDBDebugSession {
                 if (args.imageAndSymbols.imageFileName) {
                     await this.gdb.sendLoad(
                         args.imageAndSymbols.imageFileName,
-                        args.imageAndSymbols.imageOffset
+                        args.imageAndSymbols.imageOffset,
                     );
                 }
             }
@@ -373,7 +379,7 @@ export class GDBTargetDebugSession extends GDBDebugSession {
             this.sendErrorResponse(
                 response,
                 1,
-                err instanceof Error ? err.message : String(err)
+                err instanceof Error ? err.message : String(err),
             );
         }
     }
@@ -396,7 +402,7 @@ export class GDBTargetDebugSession extends GDBDebugSession {
 
     protected async disconnectRequest(
         response: DebugProtocol.DisconnectResponse,
-        _args: DebugProtocol.DisconnectArguments
+        _args: DebugProtocol.DisconnectArguments,
     ): Promise<void> {
         try {
             await this.gdb.sendGDBExit();
@@ -409,7 +415,7 @@ export class GDBTargetDebugSession extends GDBDebugSession {
             this.sendErrorResponse(
                 response,
                 1,
-                err instanceof Error ? err.message : String(err)
+                err instanceof Error ? err.message : String(err),
             );
         }
     }

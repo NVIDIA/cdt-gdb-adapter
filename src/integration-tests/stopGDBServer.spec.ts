@@ -43,7 +43,7 @@ describe('stop gdbserver', function () {
             {
                 path: emptySrc,
                 line: 3,
-            }
+            },
         );
     });
 });

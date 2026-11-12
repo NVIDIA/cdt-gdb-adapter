@@ -25,7 +25,7 @@ export async function getGdbVersion(gdbPath: string): Promise<string> {
     const gdbVersion = parseGdbVersionOutput(stdout);
     if (!gdbVersion) {
         throw new Error(
-            `Failed to get version number from GDB. GDB returned:\nstdout:\n${stdout}\nstderr:\n${stderr}`
+            `Failed to get version number from GDB. GDB returned:\nstdout:\n${stdout}\nstderr:\n${stderr}`,
         );
     }
     return gdbVersion;
